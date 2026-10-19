@@ -1,0 +1,62 @@
+{
+  "settings": {
+    "brand": "3D UrbanPrint",
+    "phone": "+998997000071",
+    "telegram": "",
+    "instagram": "3durbanprint",
+    "city": "Toshkent",
+    "heroKicker": "Toshkent · 3D bosma studiyasi",
+    "heroTitle": "Gʻoyangizni qatlam-qatlam haqiqatga aylantiramiz",
+    "heroText": "Dizayn svetilniklar, breloklar, figuralar va logotipli sovgʻalar. Oʻzimiz chop etamiz, Oʻzbekiston boʻylab yetkazib beramiz.",
+    "followers": "1 900+",
+    "announce": "Ulgurji buyurtmalar: 50 donadan boshlab maxsus narx",
+    "delivery": "Toshkent boʻylab 1–2 kun, viloyatlarga 2–5 kun"
+  },
+  "categories": [
+    { "id": "svetilnik", "name": "Svetilniklar", "blurb": "Tunda xonani oʻzgartiradigan dizayn lampalar", "cover": "assets/img/lamp-poster.webp", "sort": 1 },
+    { "id": "brelok", "name": "Breloklar", "blurb": "Kalit, sumka va sovgʻa uchun", "cover": "assets/img/turtles.webp", "sort": 2 },
+    { "id": "figura", "name": "Figuralar va oʻyinchoqlar", "blurb": "Harakatlanuvchi flexi va kolleksiya figuralari", "cover": "assets/img/flexi-dragon-white.webp", "sort": 3 },
+    { "id": "dekor", "name": "Dekor va sovgʻalar", "blurb": "Bayram, uy va ofis uchun bezaklar", "cover": "assets/img/ramadan.webp", "sort": 4 },
+    { "id": "kundalik", "name": "Kundalik buyumlar", "blurb": "Organayzer, stend va foydali mayda narsalar", "cover": "assets/img/organizer-bed.webp", "sort": 5 },
+    { "id": "noodatiy", "name": "Noodatiy buyumlar", "blurb": "Hech kimda yoʻq narsalar", "cover": "assets/img/nfc-keychain.webp", "sort": 6 },
+    { "id": "biznes", "name": "Biznes uchun", "blurb": "Logotipli mahsulot va ulgurji buyurtma", "cover": "assets/img/logo-keychain.webp", "sort": 7 }
+  ],
+  "products": [
+    { "id": 1, "title": "Lamp-01 spiral svetilnik", "category": "svetilnik", "price": 290000, "oldPrice": 0, "badges": ["new", "hit"], "images": ["assets/img/lamp-orange.webp", "assets/img/lamp-poster.webp"], "model": "lamp", "modelColor": "#F5892A", "description": "Minimalizm va futuristik shakl uygʻunligi. Spiral qovurgʻalar yorugʻlikni yumshoq tarqatadi va kechki muhitni butunlay oʻzgartiradi.", "specs": "220V · 3W · LED", "colors": ["Oq", "Toʻq sariq", "Qizil"], "instagram": "https://www.instagram.com/reel/DUn_y20CLIu/", "active": true, "stock": true, "created": 1760000000000 },
+    { "id": 2, "title": "Burama uzun svetilnik", "category": "svetilnik", "price": 340000, "oldPrice": 390000, "badges": ["sale"], "images": ["assets/img/render-lampTall.webp"], "model": "lampTall", "modelColor": "#E3CFA6", "description": "Kuchli buralgan qovurgʻali dizayn. Yotoqxona, mehmonxona va ofis stoliga mos.", "specs": "Balandligi 26 sm · 220V", "colors": ["Krem", "Oq"], "instagram": "", "active": true, "stock": true, "created": 1759900000000 },
+    { "id": 3, "title": "Ajdar brelok", "category": "brelok", "price": 39000, "oldPrice": 0, "badges": ["hit"], "images": ["assets/img/dragon-print.webp"], "model": "", "modelColor": "", "description": "Sumkaga, kalitga, sovgʻaga — hammaga yoqadi. Qism-qism harakatlanadi.", "specs": "PLA · halqa bilan", "colors": ["Qizil-qora", "Yashil", "Oltin"], "instagram": "https://www.instagram.com/reel/DVZVIJviD-3/", "active": true, "stock": true, "created": 1759800000000 },
+    { "id": 4, "title": "Kungaboqar brelok", "category": "brelok", "price": 30000, "oldPrice": 0, "badges": [], "images": ["assets/img/sunflower.webp"], "model": "", "modelColor": "", "description": "Yorqin sariq kungaboqar. Kayfiyat koʻtaradigan kichik sovgʻa.", "specs": "PLA · 5 sm", "colors": ["Sariq"], "instagram": "https://www.instagram.com/reel/DdqPZbGIpeJ/", "active": true, "stock": true, "created": 1759700000000 },
+    { "id": 5, "title": "Harakatlanuvchi skelet", "category": "brelok", "price": 35000, "oldPrice": 0, "badges": ["new"], "images": ["assets/img/skeleton.webp"], "model": "", "modelColor": "", "description": "Har bir boʻgʻini qimirlaydigan mitti skelet. Brelok yoki stol figurasi sifatida.", "specs": "PLA · flexi", "colors": ["Pushti", "Oq"], "instagram": "https://www.instagram.com/reel/DdqPZbGIpeJ/", "active": true, "stock": true, "created": 1759600000000 },
+    { "id": 6, "title": "Toshbaqa brelok", "category": "brelok", "price": 30000, "oldPrice": 0, "badges": [], "images": ["assets/img/turtles.webp"], "model": "", "modelColor": "", "description": "Katta koʻzli kulgili toshbaqa. Optom va istalgan dizaynda ham yasaymiz.", "specs": "PLA · halqa bilan", "colors": ["Yashil"], "instagram": "https://www.instagram.com/reel/DUqM-SriPMJ/", "active": true, "stock": true, "created": 1759500000000 },
+    { "id": 7, "title": "Flexi oq ajdar", "category": "figura", "price": 120000, "oldPrice": 0, "badges": ["new"], "images": ["assets/img/flexi-dragon-white.webp"], "model": "", "modelColor": "", "description": "Tanasi toʻliq egiladigan katta ajdar figurasi. Bir martada chop etiladi, yigʻish shart emas.", "specs": "PLA · 30 sm", "colors": ["Oq-kulrang", "Qora-qizil"], "instagram": "https://www.instagram.com/reel/DU0mEzNiIGA/", "active": true, "stock": true, "created": 1759400000000 },
+    { "id": 8, "title": "Flexi hayvoncha", "category": "figura", "price": 35000, "oldPrice": 0, "badges": [], "images": ["assets/img/flexi-print.webp", "assets/img/orange-print.webp"], "model": "", "modelColor": "", "description": "Qoʻl-oyogʻi harakatlanadigan kichik oʻyinchoq. Bolalar ham, kattalar ham sevadi.", "specs": "PLA · 7 sm", "colors": ["Toʻq sariq"], "instagram": "https://www.instagram.com/reel/DUpqqg2CNll/", "active": true, "stock": true, "created": 1759300000000 },
+    { "id": 9, "title": "Shaxmat piyodasi", "category": "figura", "price": 25000, "oldPrice": 0, "badges": [], "images": ["assets/img/render-pawn.webp"], "model": "pawn", "modelColor": "#D8C39B", "description": "Qatlamli toʻqimali shaxmat figurasi. Toʻliq toʻplam ham buyurtma qilinadi.", "specs": "PLA · 6 sm", "colors": ["Krem", "Qora"], "instagram": "", "active": true, "stock": true, "created": 1759200000000 },
+    { "id": 10, "title": "Ramazon muborak ravogʻi", "category": "dekor", "price": 150000, "oldPrice": 0, "badges": [], "images": ["assets/img/ramadan.webp"], "model": "", "modelColor": "", "description": "Ishlangan naqshli ravoq va osma kalligrafiya. Bayram dasturxoni va mehmonxona uchun.", "specs": "PLA · 3 rang", "colors": ["Binafsha-sariq"], "instagram": "https://www.instagram.com/reel/DUxix-PiE_0/", "active": true, "stock": true, "created": 1759100000000 },
+    { "id": 11, "title": "Kalligrafiya panno", "category": "dekor", "price": 120000, "oldPrice": 0, "badges": [], "images": ["assets/img/calligraphy.webp"], "model": "", "modelColor": "", "description": "Oltin rangli arabcha kalligrafiya va ramka. Devorga yoki javonga qoʻyiladi.", "specs": "PLA · 20 sm", "colors": ["Oltin-qora"], "instagram": "", "active": true, "stock": true, "created": 1759000000000 },
+    { "id": 12, "title": "NFC brelok-vizitka", "category": "noodatiy", "price": 60000, "oldPrice": 0, "badges": ["new"], "images": ["assets/img/nfc-keychain.webp"], "model": "", "modelColor": "", "description": "Telefonga tegizing — sahifangiz yoki kontaktingiz ochiladi. Ichiga NFC chip joylanadi.", "specs": "PLA + NFC chip", "colors": ["Pushti", "Qora", "Istalgan"], "instagram": "https://www.instagram.com/reel/DUlvGPrCOzM/", "active": true, "stock": true, "created": 1758900000000 },
+    { "id": 13, "title": "Bilyard uchburchagi", "category": "noodatiy", "price": 180000, "oldPrice": 0, "badges": [], "images": ["assets/img/billiard.webp"], "model": "", "modelColor": "", "description": "Klub nomi yoki logotip bilan yasaladigan bilyard uchburchagi. Bilyard zallari uchun ajoyib sovgʻa.", "specs": "PLA/PETG · logotip bilan", "colors": ["Qizil-oq-qora"], "instagram": "https://www.instagram.com/reel/DeMQi9wojPB/", "active": true, "stock": true, "created": 1758800000000 },
+    { "id": 14, "title": "Logotipli brelok (biznes uchun)", "category": "biznes", "price": 15000, "oldPrice": 0, "badges": ["hit"], "images": ["assets/img/logo-keychain.webp", "assets/img/bulk-250.webp"], "model": "keychain", "modelColor": "#F5892A", "description": "Kompaniyangiz logotipi bilan brelok. Mijozlarga sovgʻa, tadbir va brend uchun. Narx bir dona uchun, 50 donadan.", "specs": "50 donadan · 2–3 rang", "colors": ["Brend ranglari"], "instagram": "https://www.instagram.com/reel/Dd167dBo0Sr/", "active": true, "stock": true, "created": 1758700000000 },
+    { "id": 15, "title": "Modulli tortma organayzeri", "category": "kundalik", "price": 45000, "oldPrice": 0, "badges": [], "images": ["assets/img/organizer-bed.webp", "assets/img/organizer-print.webp"], "model": "", "modelColor": "", "description": "Tortmangiz oʻlchamiga qarab yasaladigan katakli organayzer. Hamma narsa oʻz joyida.", "specs": "PETG · oʻlcham boʻyicha", "colors": ["Kulrang", "Oq", "Qora"], "instagram": "https://www.instagram.com/reel/DYmT0uJoPNM/", "active": true, "stock": true, "created": 1758600000000 },
+    { "id": 16, "title": "Koʻzoynak stendi", "category": "kundalik", "price": 60000, "oldPrice": 0, "badges": [], "images": ["assets/img/glasses-desk.webp"], "model": "", "modelColor": "", "description": "Stol ustida koʻzoynak uchun chiroyli turgʻich. Endi koʻzoynak yoʻqolmaydi va tirnalmaydi.", "specs": "PLA · 2 rang", "colors": ["Jigarrang-krem"], "instagram": "https://www.instagram.com/reel/Dd0YvXooaIU/", "active": true, "stock": true, "created": 1758500000000 }
+  ],
+  "reels": [
+    { "id": 1, "code": "DUn_y20CLIu", "title": "Lamp-01 yonganda", "cover": "assets/img/lamp-orange.webp", "active": true },
+    { "id": 2, "code": "DVsRi68CDNM", "title": "Mijoz uchun 250 dona buyurtma", "cover": "assets/img/bulk-250.webp", "active": true },
+    { "id": 3, "code": "DVZVIJviD-3", "title": "Ajdar breloklar chop etilmoqda", "cover": "assets/img/dragon-print.webp", "active": true },
+    { "id": 4, "code": "DUxix-PiE_0", "title": "Ramazon dekori", "cover": "assets/img/ramadan.webp", "active": true },
+    { "id": 5, "code": "DUlvGPrCOzM", "title": "NFC brelok", "cover": "assets/img/nfc-keychain.webp", "active": true },
+    { "id": 6, "code": "DUqM-SriPMJ", "title": "Optom breloklar", "cover": "assets/img/turtles.webp", "active": true },
+    { "id": 7, "code": "Dd167dBo0Sr", "title": "Logotipli brelok", "cover": "assets/img/logo-keychain.webp", "active": true },
+    { "id": 8, "code": "DUpqqg2CNll", "title": "Flexi hayvonchalar", "cover": "assets/img/flexi-print.webp", "active": true },
+    { "id": 9, "code": "DeMQi9wojPB", "title": "Bilyard uchburchagi", "cover": "assets/img/billiard.webp", "active": true },
+    { "id": 10, "code": "DU0mEzNiIGA", "title": "Brelok stendi", "cover": "assets/img/flexi-dragon-white.webp", "active": true },
+    { "id": 11, "code": "DYmT0uJoPNM", "title": "Organayzer chop etish", "cover": "assets/img/organizer-bed.webp", "active": true },
+    { "id": 12, "code": "DdYVymWo_7H", "title": "Printer xizmati", "cover": "assets/img/printer-story.webp", "active": true },
+    { "id": 13, "code": "Dd3urtvoHNQ", "title": "Koʻp rangli bosma", "cover": "assets/img/ams.webp", "active": true },
+    { "id": 14, "code": "DUvwaaFCPmO", "title": "Filament almashtirish", "cover": "assets/img/filament.webp", "active": true },
+    { "id": 15, "code": "DUtpHkyCA1Y", "title": "Ish jarayoni", "cover": "assets/img/orange-print.webp", "active": true },
+    { "id": 16, "code": "Dd0YvXooaIU", "title": "Koʻzoynak stendi", "cover": "assets/img/glasses-desk.webp", "active": true }
+  ],
+  "orders": [],
+  "requests": []
+}
