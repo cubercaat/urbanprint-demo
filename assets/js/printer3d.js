@@ -439,16 +439,16 @@
       printer.setHead(lerp(pp < 1 ? rimP.x : 1.3, 1.2, hold), lerp(pp < 1 ? rimP.z : 0, -1.1, hold));
       printer.glow(1 - hold);
       const d = clamp((p - 0.82) / 0.18);
-      const slide = smooth(clamp(d / 0.4)), fall = clamp((d - 0.4) / 0.6);
-      holder.position.set(0, -fall * fall * 14, slide * 4.4);
+      const slide = smooth(clamp(d / 0.35)), fall = clamp((d - 0.35) / 0.45);
+      holder.position.set(0, -fall * fall * 16, slide * 2.6);
       holder.rotation.set(fall * 1.1, 0, fall * 0.5);
       // Kamera: sekin aylanadi va sichqonchaga ergashadi
       mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
-      const narrow = cam.aspect < 0.9;
       const ang = 0.42 + Math.sin(performance.now() / 9000) * 0.18 + mx * 0.25;
-      const R = narrow ? 17.5 : 14.5;
+      // Tor ekranlarda kamera uzoqlashadi, printer to'liq sig'adi
+      const R = 14.5 * Math.max(1, 1.35 / Math.max(cam.aspect, 0.4));
       cam.position.set(Math.sin(ang) * R, 4.6 + my * 1.4, Math.cos(ang) * R);
-      cam.lookAt(0, 2.4, 0);
+      cam.lookAt(0, cam.aspect < 1.2 ? 2.0 : 2.4, 0);
       const now = performance.now() / 1000;
       fl.forEach((q) => { q.o.position.y = q.y + Math.sin(now * q.sp * 2 + q.ph) * 0.35; q.o.rotation.y += dt * q.sp; });
       renderer.render(scene, cam);
