@@ -405,11 +405,12 @@
     const kc = buildKeychain({ base: 0xf5892a, top: 0x6fcf3b }); kc.rotation.x = 1.1; const kw = new THREE.Group(); kw.add(kc); addFloat(kw, 4.0, 5.0, 0.6, 0.55, 0.32);
 
     const queue = opts.queue || [['lamp', 0xf5892a], ['pawn', 0xd8c39b], ['lampTall', 0xe3cfa6], ['lamp', 0x6fcf3b]];
-    let qi = 0, obj = null;
+    let qi = 0, obj = null, curKind = '';
     const holder = new THREE.Group(); printer.bed.add(holder);
     function next() {
       if (obj) { holder.remove(obj.group); obj.layers.forEach((m) => m.geometry.dispose()); }
       const [k, c] = queue[qi++ % queue.length];
+      curKind = k;
       obj = buildObject(k, c); holder.add(obj.group);
       holder.position.set(0, 0, 0); holder.rotation.set(0, 0, 0);
     }
@@ -452,7 +453,7 @@
       const now = performance.now() / 1000;
       fl.forEach((q) => { q.o.position.y = q.y + Math.sin(now * q.sp * 2 + q.ph) * 0.35; q.o.rotation.y += dt * q.sp; });
       renderer.render(scene, cam);
-      return { layer: Math.min(N, Math.floor(f)), N, done: pp >= 1 };
+      return { layer: Math.min(N, Math.floor(f)), N, done: pp >= 1, p: pp, kind: curKind };
     }
     function quality(dpr, shadows) {
       maxDpr = dpr; renderer.setPixelRatio(Math.min(g.devicePixelRatio || 1, dpr));

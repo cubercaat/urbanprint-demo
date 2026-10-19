@@ -2,8 +2,8 @@
   "name": "urbanprint-server",
   "version": "1.0.0",
   "private": true,
-  "description": "3D UrbanPrint do'koni va admin paneli uchun server (tashqi paketlarsiz)",
+  "description": "3D UrbanPrint do'koni va admin paneli uchun server (tashqi paketlarsiz, SQLite ichida)",
   "main": "server.js",
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22.5" },
   "scripts": { "start": "node server.js" }
 }

@@ -3,86 +3,117 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0B0D0F">
+<meta name="theme-color" content="#0E1218">
 <title>3D UrbanPrint — 3D printerda yasalgan svetilnik, brelok va sovgʻalar</title>
 <meta name="description" content="Toshkentdagi 3D bosma studiyasi: dizayn svetilniklar, breloklar, figuralar, logotipli sovgʻalar va maxsus buyurtmalar. Oʻzbekiston boʻylab yetkazib berish.">
 <meta property="og:title" content="3D UrbanPrint">
 <meta property="og:description" content="Gʻoyangizni qatlam-qatlam haqiqatga aylantiramiz. Svetilniklar, breloklar, figuralar va maxsus buyurtmalar.">
 <meta property="og:image" content="assets/img/lamp-orange.webp">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 3 36 12v16L20 37 4 28V12z' fill='%23F5892A'/%3E%3Cpath d='M20 3 36 12 20 21 4 12z' fill='%23FFB067'/%3E%3Cpath d='M20 21v16L4 28V12z' fill='%23C96A14'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 3 36 12v16L20 37 4 28V12z' fill='%23FF7A1A'/%3E%3Cpath d='M20 3 36 12 20 21 4 12z' fill='%23FFB067'/%3E%3Cpath d='M20 21v16L4 28V12z' fill='%23C95A0C'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/site.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css?v=5">
+<script>try{if(sessionStorage.getItem('up_seen'))document.documentElement.classList.add('seen')}catch(e){}</script>
 </head>
 <body>
 
+<!-- Yuklanish: logo qatlam-qatlam "chop etiladi" -->
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-in">
+    <div class="loader-hex"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="loader-num"><span id="loaderNum">0</span><small>%</small></div>
+  </div>
+</div>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
 <div class="announce" id="announce" hidden><span id="announceText"></span></div>
 
 <header class="site-head" id="head">
   <div class="wrap head-row">
-    <a href="#top" class="logo" aria-label="3D UrbanPrint, bosh sahifa">
-      <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 36 12v16L20 37 4 28V12z" fill="#F5892A"/><path d="M20 3 36 12 20 21 4 12z" fill="#FFB067"/><path d="M20 21v16L4 28V12z" fill="#C96A14"/></svg>
-      <span><b>3D</b> UrbanPrint</span>
+    <a href="#top" class="logo" aria-label="3D UrbanPrint">
+      <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 36 12v16L20 37 4 28V12z" fill="#FF7A1A"/><path d="M20 3 36 12 20 21 4 12z" fill="#FFB067"/><path d="M20 21v16L4 28V12z" fill="#C95A0C"/></svg>
+      <span>3D UrbanPrint</span>
     </a>
     <nav class="nav" id="nav" aria-label="Asosiy">
-      <a href="#kataloglar">Kataloglar</a>
-      <a href="#mahsulotlar">Mahsulotlar</a>
-      <a href="#videolar">Videolar</a>
-      <a href="#jarayon">Qanday yasaladi</a>
-      <a href="#buyurtma">Maxsus buyurtma</a>
-      <a href="#aloqa">Aloqa</a>
+      <a href="#kataloglar" data-i18n="nav.catalogs">Kataloglar</a>
+      <a href="#mahsulotlar" data-i18n="nav.products">Mahsulotlar</a>
+      <a href="#videolar" data-i18n="nav.videos">Videolar</a>
+      <a href="#jarayon" data-i18n="nav.process">Qanday yasaladi</a>
+      <a href="#buyurtma" data-i18n="nav.custom">Maxsus buyurtma</a>
+      <button type="button" class="nav-track" data-track data-i18n="nav.track">Buyurtmam qayerda?</button>
     </nav>
     <div class="head-actions">
-      <button class="cart-btn" id="cartBtn" type="button" aria-label="Savat">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 12H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
-        <span class="cart-count" id="cartCount" hidden>0</span>
+      <div class="lang" role="group" aria-label="Til">
+        <button type="button" data-lang="uz">UZ</button><button type="button" data-lang="ru">RU</button><button type="button" data-lang="en">EN</button>
+      </div>
+      <button class="round-btn" id="favBtn" type="button" data-i18n-aria="cart.fav" aria-label="Sevimlilar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span class="count" id="favCount" hidden>0</span>
       </button>
-      <button class="menu-btn" id="menuBtn" type="button" aria-label="Menyu" aria-expanded="false"><i></i><i></i></button>
+      <button class="round-btn" id="cartBtn" type="button" data-i18n-aria="cart.title" aria-label="Savat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 12H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+        <span class="count" id="cartCount" hidden>0</span>
+      </button>
+      <button class="round-btn menu-btn" id="menuBtn" type="button" aria-label="Menyu" aria-expanded="false"><i></i><i></i></button>
     </div>
   </div>
 </header>
 
 <main id="top">
-  <!-- ===== Bosh ekran: orqa fonda 3D printer to'xtovsiz chop etadi ===== -->
+  <!-- ===== Bosh ekran ===== -->
   <section class="hero" aria-label="Bosh ekran">
     <canvas class="hero-lines" id="heroLines" aria-hidden="true"></canvas>
     <canvas class="hero-3d" id="hero3d" aria-hidden="true"></canvas>
     <div class="hero-shade" aria-hidden="true"></div>
     <div class="wrap hero-in">
-      <span class="kicker reveal" id="heroKicker">Toshkent · 3D bosma studiyasi</span>
+      <p class="hero-kicker" id="heroKicker">Toshkentdagi 3D bosma studiyasi</p>
       <h1 class="hero-title" id="heroTitle">Gʻoyangizni qatlam-qatlam haqiqatga aylantiramiz</h1>
-      <p class="hero-sub reveal" id="heroText">Dizayn svetilniklar, breloklar, figuralar va logotipli sovgʻalar. Oʻzimiz chop etamiz, Oʻzbekiston boʻylab yetkazib beramiz.</p>
-      <div class="hero-cta reveal">
-        <a class="btn magnetic" href="#mahsulotlar"><span>Katalogni koʻrish</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        <a class="btn btn-ghost magnetic" href="#buyurtma">Oʻzimga yasatish</a>
+      <p class="hero-sub" id="heroText">Dizayn svetilniklar, breloklar, figuralar va logotipli sovgʻalar. Oʻzimiz chop etamiz, Oʻzbekiston boʻylab yetkazib beramiz.</p>
+      <div class="hero-cta">
+        <a class="btn magnetic" href="#mahsulotlar" data-i18n="hero.cta">Katalogni koʻrish</a>
+        <a class="btn btn-ghost magnetic" href="#buyurtma" data-i18n="hero.cta2">Oʻzimga yasatish</a>
       </div>
-      <dl class="hero-stats reveal">
-        <div><dt data-count id="statFollowers">1 900+</dt><dd>Instagramda kuzatuvchi</dd></div>
-        <div><dt><span data-count-to="250">250</span>+</dt><dd>dona bitta ulgurji buyurtmada</dd></div>
-        <div><dt><span data-count-to="14">14</span></dt><dd>viloyatga yetkazib berish</dd></div>
+    </div>
+    <aside class="ticket" aria-live="off">
+      <div class="ticket-head"><i class="nozzle-dot"></i><span data-i18n="ticket.title">Hozir printerda</span></div>
+      <b class="ticket-name" id="tkName">Lamp-01</b>
+      <dl>
+        <div><dt data-i18n="ticket.layer">Qatlam</dt><dd id="tkLayer">0 / 100</dd></div>
+        <div><dt data-i18n="ticket.material">Material</dt><dd id="tkMat">PLA</dd></div>
+        <div><dt data-i18n="ticket.height">Qatlam qalinligi</dt><dd>0,2 mm</dd></div>
+        <div><dt data-i18n="ticket.left">Qoldi</dt><dd id="tkLeft">—</dd></div>
       </dl>
-    </div>
-    <div class="hero-badge" aria-hidden="true">
-      <div class="nozzle-dot"></div>
-      <span id="heroLayer">Chop etilmoqda · qatlam 0</span>
-    </div>
-    <a class="scroll-cue" href="#kataloglar" aria-label="Pastga"><span></span></a>
+      <div class="ticket-bar"><i id="tkBar"></i></div>
+    </aside>
   </section>
 
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track" id="marquee"></div>
+  <div class="facts wrap" aria-label="Raqamlar">
+    <div><b id="statFollowers">1 900+</b><span data-i18n="facts.followers">Instagramda kuzatuvchi</span></div>
+    <div><b><span data-count-to="250">250</span>+</b><span data-i18n="facts.bulk">dona bitta ulgurji buyurtmada</span></div>
+    <div><b><span data-count-to="14">14</span></b><span data-i18n="facts.regions">viloyatga yetkazib berish</span></div>
   </div>
 
   <!-- ===== Kataloglar ===== -->
   <section class="section" id="kataloglar">
     <div class="wrap">
       <div class="section-head">
-        <span class="kicker">Kataloglar</span>
-        <h2 class="print-title">Har bir kayfiyatga oʻz buyumi</h2>
-        <p class="muted">Yangi kelganlar, kundalik foydali narsalar, sovgʻaga arziydigan noodatiy buyumlar va biznesingiz uchun logotipli mahsulotlar.</p>
+        <h2 class="print-title" data-i18n="cats.title">Har bir kayfiyatga oʻz buyumi</h2>
+        <p class="lede" data-i18n="cats.lede">Yangi kelganlar, kundalik foydali narsalar, sovgʻaga arziydigan noodatiy buyumlar va biznesingiz uchun logotipli mahsulotlar.</p>
       </div>
       <div class="cat-grid" id="catGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== Ko'rgazma: skroll bilan gorizontal harakat ===== -->
+  <section class="showcase" id="korgazma" aria-label="Ustaxona tanlovi">
+    <div class="showcase-pin">
+      <div class="wrap showcase-head">
+        <h2 class="print-title" data-i18n="feat.title">Ustaxona tanlovi</h2>
+        <p class="lede" data-i18n="feat.lede">Mijozlar eng koʻp soʻraydigan buyumlar.</p>
+      </div>
+      <div class="showcase-track" id="showcase"></div>
+      <div class="wrap showcase-meter" aria-hidden="true"><i id="showcaseBar"></i></div>
     </div>
   </section>
 
@@ -90,20 +121,17 @@
   <section class="section" id="mahsulotlar">
     <div class="wrap">
       <div class="section-head row">
-        <div>
-          <span class="kicker">Doʻkon</span>
-          <h2 class="print-title">Tayyor mahsulotlar</h2>
-        </div>
+        <h2 class="print-title" data-i18n="shop.title">Tayyor mahsulotlar</h2>
         <div class="tools">
           <label class="search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input id="search" type="search" placeholder="Qidirish: svetilnik, brelok..." aria-label="Mahsulot qidirish">
+            <input id="search" type="search" data-i18n-ph="shop.search" data-i18n-aria="shop.search" placeholder="Qidirish">
           </label>
           <select id="sort" class="select" aria-label="Saralash">
-            <option value="new">Avval yangilari</option>
-            <option value="cheap">Arzonroq</option>
-            <option value="expensive">Qimmatroq</option>
-            <option value="popular">Xitlar</option>
+            <option value="new" data-i18n="sort.new">Avval yangilari</option>
+            <option value="cheap" data-i18n="sort.cheap">Arzonroq</option>
+            <option value="expensive" data-i18n="sort.expensive">Qimmatroq</option>
+            <option value="popular" data-i18n="sort.popular">Xitlar</option>
           </select>
         </div>
       </div>
@@ -116,49 +144,30 @@
   <section class="section reels-sec" id="videolar">
     <div class="wrap">
       <div class="section-head row">
-        <div>
-          <span class="kicker">Instagram · @<span class="ig-handle">3durbanprint</span></span>
-          <h2 class="print-title">Ustaxonadan jonli videolar</h2>
-          <p class="muted">Printer qanday ishlashini, buyurtmalar qanday tayyorlanishini oʻz koʻzingiz bilan koʻring. Bosing — video shu yerda ochiladi.</p>
+        <div class="stack-sm">
+          <h2 class="print-title" data-i18n="reels.title">Ustaxonadan jonli videolar</h2>
+          <p class="lede" data-i18n="reels.lede">Printer qanday ishlashini koʻring.</p>
         </div>
         <div class="reel-nav">
-          <button class="icon-btn" id="reelPrev" type="button" aria-label="Oldingi videolar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg></button>
-          <button class="icon-btn" id="reelNext" type="button" aria-label="Keyingi videolar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></button>
+          <button class="icon-btn" id="reelPrev" type="button" aria-label="Oldingi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="icon-btn" id="reelNext" type="button" aria-label="Keyingi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></button>
         </div>
       </div>
     </div>
     <div class="reels" id="reels"></div>
-    <div class="wrap reels-foot">
-      <a class="btn btn-ghost" id="igFollow" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener">Instagramda kuzatish</a>
-    </div>
+    <div class="wrap reels-foot"><a class="btn btn-ghost" id="igFollow" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener" data-i18n="reels.follow">Instagramda kuzatish</a></div>
   </section>
 
-  <!-- ===== Qanday yasaladi: skroll bilan 3D printer ===== -->
+  <!-- ===== Qanday yasaladi ===== -->
   <section class="scene" id="jarayon" aria-label="Printer buyum chiqarmoqda">
     <div class="scene-pin">
       <div class="wrap scene-grid">
         <div class="scene-text">
-          <span class="kicker">Qanday yasaladi</span>
-          <div class="step on" data-step="0">
-            <b class="step-n">01</b>
-            <h2>Gʻoya va 3D model</h2>
-            <p>Siz rasm, video yoki shunchaki tushuntirish yuborasiz. Biz 3D modelni tayyorlaymiz yoki moslaymiz.</p>
-          </div>
-          <div class="step" data-step="1">
-            <b class="step-n">02</b>
-            <h2>Plastik qatlam-qatlam yotadi</h2>
-            <p>Printer soplosi erigan plastikni 0,2 mm qalinlikda yotqizadi. Har bir qatlam oldingisining ustiga tushadi.</p>
-          </div>
-          <div class="step" data-step="2">
-            <b class="step-n">03</b>
-            <h2>Tayyor buyum qoʻlingizda</h2>
-            <p>Tekshiramiz, qadoqlaymiz va Oʻzbekistonning istalgan joyiga yetkazamiz.</p>
-            <a class="btn" href="#buyurtma">Buyurtma berish</a>
-          </div>
-          <div class="scene-meter" aria-hidden="true">
-            <span id="layerLabel">Qatlam 0 / 100</span>
-            <div class="meter-bar"><i id="meterFill"></i></div>
-          </div>
+          <p class="scene-kicker" data-i18n="proc.kicker">Qanday yasaladi</p>
+          <div class="step on" data-step="0"><b class="step-n">1</b><h2 data-i18n="proc.s1t">Gʻoya va 3D model</h2><p data-i18n="proc.s1p"></p></div>
+          <div class="step" data-step="1"><b class="step-n">2</b><h2 data-i18n="proc.s2t">Plastik qatlam-qatlam yotadi</h2><p data-i18n="proc.s2p"></p></div>
+          <div class="step" data-step="2"><b class="step-n">3</b><h2 data-i18n="proc.s3t">Tayyor buyum qoʻlingizda</h2><p data-i18n="proc.s3p"></p><a class="btn" href="#buyurtma" data-i18n="proc.cta">Buyurtma berish</a></div>
+          <div class="scene-meter" aria-hidden="true"><span id="layerLabel">0 / 100</span><div class="meter-bar"><i id="meterFill"></i></div></div>
         </div>
         <div class="scene-art">
           <canvas id="printer3d" role="img" aria-label="3D printer svetilnik chop etmoqda"></canvas>
@@ -173,21 +182,17 @@
     <div class="wrap biz-grid">
       <div class="biz-media">
         <img src="assets/img/bulk-250.webp" alt="Printerda bir vaqtda chop etilayotgan 250 dona buyurtma" loading="lazy">
-        <div class="biz-float"><b>250 dona</b><span>bitta mijoz buyurtmasi</span></div>
+        <div class="biz-float"><b>250</b><span data-i18n="biz.float">bitta mijoz buyurtmasi</span></div>
       </div>
-      <div>
-        <span class="kicker">Biznes va tadbirlar uchun</span>
-        <h2 class="print-title">Logotipingiz — minglab qoʻlda</h2>
-        <p class="muted">Kompaniya, doʻkon, avtoservis yoki toʻy uchun logotipli brelok, sovgʻa va stendlar. Ulgurji buyurtmalarni bir necha printerda parallel chop etamiz.</p>
+      <div class="stack">
+        <h2 class="print-title" data-i18n="biz.title">Logotipingiz — minglab qoʻlda</h2>
+        <p class="lede" data-i18n="biz.lede"></p>
         <ul class="ticks">
-          <li>50 donadan boshlab maxsus narx</li>
-          <li>Brend ranglaringizda, 2–4 rang</li>
-          <li>Namuna avval tasdiqlanadi, keyin ommaviy bosma</li>
-          <li>NFC chip bilan raqamli vizitka-brelok</li>
+          <li data-i18n="biz.t1"></li><li data-i18n="biz.t2"></li><li data-i18n="biz.t3"></li><li data-i18n="biz.t4"></li>
         </ul>
         <div class="hero-cta">
-          <a class="btn" href="#buyurtma" data-preset="biznes">Ulgurji narxni soʻrash</a>
-          <a class="btn btn-ghost" href="#mahsulotlar" data-cat="biznes">Biznes mahsulotlari</a>
+          <a class="btn" href="#buyurtma" data-preset="biznes" data-i18n="biz.cta">Ulgurji narxni soʻrash</a>
+          <a class="btn btn-ghost" href="#mahsulotlar" data-cat="biznes" data-i18n="biz.cta2">Biznes mahsulotlari</a>
         </div>
       </div>
     </div>
@@ -196,35 +201,34 @@
   <!-- ===== Maxsus buyurtma ===== -->
   <section class="section custom" id="buyurtma">
     <div class="wrap custom-grid">
-      <div>
-        <span class="kicker">Maxsus buyurtma</span>
-        <h2 class="print-title">Kerakli narsani tushuntiring — biz yasaymiz</h2>
-        <p class="muted">Katalogda yoʻq narsa kerakmi? Istagan usulda yuboring: matn, rasm, video yoki namuna havolasi. Narx va muddatni tez aytamiz.</p>
-        <div class="ways">
-          <div class="way"><span class="way-ic">1</span><div><b>Yozing</b><span>Oʻlcham, rang, nechta kerakligi</span></div></div>
-          <div class="way"><span class="way-ic">2</span><div><b>Rasm yoki video qoʻshing</b><span>Telefoningizdagi suratni yuklang</span></div></div>
-          <div class="way"><span class="way-ic">3</span><div><b>Narxni oling</b><span>Sizga qoʻngʻiroq qilamiz yoki yozamiz</span></div></div>
-        </div>
+      <div class="stack custom-side">
+        <h2 class="print-title" data-i18n="custom.title">Kerakli narsani tushuntiring — biz yasaymiz</h2>
+        <p class="lede" data-i18n="custom.lede"></p>
+        <ol class="ways">
+          <li><b data-i18n="custom.w1t"></b><span data-i18n="custom.w1p"></span></li>
+          <li><b data-i18n="custom.w2t"></b><span data-i18n="custom.w2p"></span></li>
+          <li><b data-i18n="custom.w3t"></b><span data-i18n="custom.w3p"></span></li>
+        </ol>
       </div>
       <form class="panel" id="reqForm" novalidate>
         <div class="grid-2">
-          <div class="field"><label for="r-name">Ismingiz</label><input class="input" id="r-name" autocomplete="name" maxlength="80"></div>
-          <div class="field"><label for="r-phone">Telefon</label><input class="input" id="r-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="90 123 45 67"></div>
+          <div class="field"><label for="r-name" data-i18n="f.name">Ismingiz</label><input class="input" id="r-name" autocomplete="name" maxlength="80"></div>
+          <div class="field"><label for="r-phone" data-i18n="f.phone">Telefon</label><input class="input" id="r-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="90 123 45 67"></div>
         </div>
         <div class="grid-2">
-          <div class="field"><label for="r-title">Nima kerak?</label><input class="input" id="r-title" maxlength="120" placeholder="Masalan: logotipli brelok"></div>
-          <div class="field"><label for="r-qty">Soni</label><input class="input" id="r-qty" inputmode="numeric" maxlength="12" placeholder="1"></div>
+          <div class="field"><label for="r-title" data-i18n="f.what">Nima kerak?</label><input class="input" id="r-title" maxlength="120" data-i18n-ph="f.whatPh"></div>
+          <div class="field"><label for="r-qty" data-i18n="f.qty">Soni</label><input class="input" id="r-qty" inputmode="numeric" maxlength="12" placeholder="1"></div>
         </div>
-        <div class="field"><label for="r-desc">Batafsil tushuntiring</label><textarea class="textarea" id="r-desc" maxlength="3000" placeholder="Oʻlcham, rang, qayerda ishlatiladi, qachongacha kerak"></textarea></div>
-        <div class="field"><label for="r-link">Namuna havolasi (ixtiyoriy)</label><input class="input" id="r-link" inputmode="url" placeholder="instagram.com/..."></div>
+        <div class="field"><label for="r-desc" data-i18n="f.desc">Batafsil tushuntiring</label><textarea class="textarea" id="r-desc" maxlength="3000" data-i18n-ph="f.descPh"></textarea></div>
+        <div class="field"><label for="r-link" data-i18n="f.link">Namuna havolasi</label><input class="input" id="r-link" inputmode="url" placeholder="instagram.com/..."></div>
         <div class="field">
-          <span class="label">Rasm yoki video (5 tagacha, har biri 40 MB gacha)</span>
-          <label class="drop" id="drop" for="r-files"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg><span>Fayl tanlang yoki shu yerga tashlang</span></label>
+          <span class="label" data-i18n="f.files">Rasm yoki video</span>
+          <label class="drop" id="drop" for="r-files"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg><span data-i18n="f.drop">Fayl tanlang</span></label>
           <input id="r-files" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" multiple hidden>
           <div class="file-list" id="fileList"></div>
         </div>
         <p class="form-error" id="reqErr" role="alert"></p>
-        <button class="btn btn-wide" type="submit" id="reqBtn">Soʻrovni yuborish</button>
+        <button class="btn btn-wide" type="submit" id="reqBtn" data-i18n="f.send">Soʻrovni yuborish</button>
         <div class="ok-box" id="reqOk" hidden></div>
       </form>
     </div>
@@ -233,17 +237,14 @@
   <!-- ===== Savollar ===== -->
   <section class="section" id="savollar">
     <div class="wrap faq-wrap">
-      <div class="section-head">
-        <span class="kicker">Koʻp soʻraladi</span>
-        <h2 class="print-title">Savol-javob</h2>
-      </div>
-      <div class="faq" id="faq">
-        <details><summary>Buyurtma qancha vaqtda tayyor boʻladi?</summary><p>Tayyor mahsulotlar 1–2 kunda joʻnatiladi. Maxsus buyurtma odatda 2–5 kun, ulgurji buyurtmalar soniga qarab kelishiladi.</p></details>
-        <details><summary>Qanday yetkazib berasizlar?</summary><p id="faqDelivery">Toshkent boʻylab 1–2 kun, viloyatlarga 2–5 kun. Yetkazish narxi manzilga qarab aytiladi.</p></details>
-        <details><summary>Qaysi plastikdan yasaysizlar?</summary><p>Asosan PLA va PETG. Ular hidsiz, mustahkam va uzoq xizmat qiladi. Svetilniklarda isimaydigan LED ishlatiladi.</p></details>
-        <details><summary>Rangini oʻzim tanlay olamanmi?</summary><p>Ha. Koʻp mahsulotlarni bir necha rangda yasaymiz, koʻp rangli bosma ham bor. Buyurtmada rangni yozing.</p></details>
-        <details><summary>Toʻlov qanday?</summary><p>Buyurtmadan keyin siz bilan bogʻlanamiz va qulay usulni kelishamiz: naqd, karta yoki oʻtkazma.</p></details>
-        <details><summary>Rasmdan nusxa yasab bera olasizlarmi?</summary><p>Koʻp hollarda ha. Rasm yoki videoni yuboring — imkoniyat va narxni aytamiz.</p></details>
+      <h2 class="print-title" data-i18n="faq.title">Savol-javob</h2>
+      <div class="faq">
+        <details><summary data-i18n="faq.q1"></summary><p data-i18n="faq.a1"></p></details>
+        <details><summary data-i18n="faq.q2"></summary><p id="faqDelivery"></p></details>
+        <details><summary data-i18n="faq.q3"></summary><p data-i18n="faq.a3"></p></details>
+        <details><summary data-i18n="faq.q4"></summary><p data-i18n="faq.a4"></p></details>
+        <details><summary data-i18n="faq.q5"></summary><p data-i18n="faq.a5"></p></details>
+        <details><summary data-i18n="faq.q6"></summary><p data-i18n="faq.a6"></p></details>
       </div>
     </div>
   </section>
@@ -252,36 +253,50 @@
 <footer class="foot" id="aloqa">
   <div class="wrap">
     <div class="foot-cta">
-      <h2>Bugunoq printer ishga tushsin</h2>
+      <h2 class="foot-title" data-i18n="foot.cta">Bugunoq printer ishga tushsin</h2>
       <div class="hero-cta">
-        <a class="btn" id="footCall" href="tel:+998997000071">Qoʻngʻiroq qilish</a>
-        <a class="btn btn-ghost" id="footIg" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener">Instagramda yozish</a>
+        <a class="btn" id="footCall" href="tel:+998997000071" data-i18n="foot.call">Qoʻngʻiroq qilish</a>
+        <a class="btn btn-ghost" id="footIg" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener" data-i18n="foot.ig">Instagramda yozish</a>
       </div>
     </div>
     <div class="foot-row">
-      <div class="foot-col"><span class="muted">Telefon</span><a class="big" id="footPhone" href="tel:+998997000071">+998 99 700 00 71</a></div>
-      <div class="foot-col"><span class="muted">Instagram</span><a class="big" id="footIgHandle" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener">@3durbanprint</a></div>
-      <div class="foot-col" id="footTgCol" hidden><span class="muted">Telegram</span><a class="big" id="footTg" href="#" target="_blank" rel="noopener"></a></div>
-      <div class="foot-col"><span class="muted">Manzil</span><span class="big" id="footCity">Toshkent</span><small>Oʻzbekiston boʻylab yetkazib berish</small></div>
+      <div class="foot-col"><span data-i18n="foot.phone">Telefon</span><a class="big" id="footPhone" href="tel:+998997000071">+998 99 700 00 71</a></div>
+      <div class="foot-col"><span>Instagram</span><a class="big" id="footIgHandle" href="https://www.instagram.com/3durbanprint/" target="_blank" rel="noopener">@3durbanprint</a></div>
+      <div class="foot-col" id="footTgCol" hidden><span>Telegram</span><a class="big" id="footTg" href="#" target="_blank" rel="noopener"></a></div>
+      <div class="foot-col"><span data-i18n="foot.address">Manzil</span><span class="big" id="footCity">Toshkent</span><small data-i18n="foot.delivery">Oʻzbekiston boʻylab yetkazib berish</small></div>
+      <div class="foot-col" id="footHoursCol" hidden><span data-i18n="foot.hours">Ish vaqti</span><span class="big" id="footHours"></span></div>
     </div>
-    <div class="foot-bottom"><span>© <span id="year"></span> 3D UrbanPrint</span><a href="admin.html" class="muted">Admin</a></div>
+    <div class="foot-bottom"><span>© <span id="year"></span> 3D UrbanPrint</span><button type="button" class="link-btn" data-track data-i18n="nav.track">Buyurtmam qayerda?</button><a href="admin.html">Admin</a></div>
   </div>
 </footer>
 
-<!-- Savat -->
+<!-- Savat va sevimlilar -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-label="Savat" aria-hidden="true">
-  <div class="drawer-head"><h3>Savat</h3><button class="icon-btn" id="drawerClose" type="button" aria-label="Yopish">✕</button></div>
+  <div class="drawer-head">
+    <div class="drawer-tabs" role="tablist">
+      <button type="button" role="tab" data-tab="cart"><span data-i18n="cart.title">Savat</span> <small id="tabCartN"></small></button>
+      <button type="button" role="tab" data-tab="fav"><span data-i18n="cart.fav">Sevimlilar</span> <small id="tabFavN"></small></button>
+    </div>
+    <button class="icon-btn" id="drawerClose" type="button" data-i18n-aria="common.close" aria-label="Yopish">✕</button>
+  </div>
   <div class="drawer-body" id="cartBody"></div>
   <div class="drawer-foot" id="cartFoot"></div>
 </aside>
 
-<div class="cursor-glow" id="glow" aria-hidden="true"></div>
+<a class="fab" id="fab" href="tel:+998997000071" aria-label="Qoʻngʻiroq qilish">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+</a>
 
-<script src="assets/js/three.min.js?v=4"></script>
-<script src="assets/js/printer3d.js?v=4"></script>
-<script src="assets/js/store.js?v=4"></script>
-<script src="assets/js/ui.js?v=4"></script>
-<script src="assets/js/site.js?v=4"></script>
+<div class="cursor" id="cursor" aria-hidden="true"><span id="cursorLabel"></span></div>
+<div class="grain" aria-hidden="true"></div>
+
+<script src="assets/js/three.min.js?v=5"></script>
+<script src="assets/js/printer3d.js?v=5"></script>
+<script src="assets/js/shared.js?v=5"></script>
+<script src="assets/js/i18n.js?v=5"></script>
+<script src="assets/js/store.js?v=5"></script>
+<script src="assets/js/ui.js?v=5"></script>
+<script src="assets/js/site.js?v=5"></script>
 </body>
 </html>

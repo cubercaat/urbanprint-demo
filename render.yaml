@@ -1,0 +1,31 @@
+# Render.com Blueprint. Doimiy disk buyurtma va rasmlar o'chib ketmasligi uchun kerak (pullik tarif).
+services:
+  - type: web
+    name: urbanprint
+    runtime: docker
+    plan: starter
+    envVars:
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PUBLIC_URL
+        sync: false
+      - key: PAYME_MERCHANT_ID
+        sync: false
+      - key: PAYME_KEY
+        sync: false
+      - key: CLICK_SERVICE_ID
+        sync: false
+      - key: CLICK_MERCHANT_ID
+        sync: false
+      - key: CLICK_SECRET_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

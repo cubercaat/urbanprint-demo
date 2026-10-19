@@ -9,7 +9,7 @@ window.UI = (function () {
       else if (k === 'class') el.className = v;
       else if (k === 'text') el.textContent = v;
       else if (k === 'html') el.innerHTML = v; // faqat o'zimiz yozgan statik belgilar uchun
-      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else if (k === 'style' && typeof v === 'object') Object.entries(v).forEach(([sk, sv]) => { if (sk.startsWith('--')) el.style.setProperty(sk, sv); else el.style[sk] = sv; });
       else el.setAttribute(k, v === true ? '' : v);
     }
     kids.flat().forEach((c) => { if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c))); });
