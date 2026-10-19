@@ -133,7 +133,7 @@ p { margin: 0; }
 .hero { position: relative; min-height: 100svh; display: flex; align-items: center; overflow: hidden; padding: 120px 0 90px; isolation: isolate; }
 .hero-lines, .hero-3d { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-lines { z-index: -3; }
-.hero-3d { z-index: -2; left: 28%; width: 72%; opacity: 0; transition: opacity 1.4s ease; }
+.hero-3d { z-index: -2; left: 34%; width: 66%; opacity: 0; transition: opacity 1.4s ease; }
 .hero-3d.ready { opacity: 1; }
 .hero-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; background:
   radial-gradient(60% 70% at 72% 50%, transparent 30%, rgba(11,13,15,.4) 70%, var(--bg) 100%),
@@ -141,7 +141,7 @@ p { margin: 0; }
   linear-gradient(0deg, var(--bg) 0%, transparent 22%); }
 .hero-in { position: relative; }
 .hero-in > * { max-width: 680px; }
-.hero-title { font-size: clamp(34px, 5.3vw, 74px); line-height: 1.02; font-weight: 800; margin: 22px 0 24px; letter-spacing: -0.04em; }
+.hero-title { font-size: clamp(32px, 4.3vw, 64px); line-height: 1.02; font-weight: 800; margin: 22px 0 24px; letter-spacing: -0.04em; }
 .hero-title .w { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .06em; margin-bottom: -.06em; }
 .hero-title .w > span { display: inline-block; transform: translateY(105%); animation: rise .9s var(--ease) forwards; }
 .hero-title .accent { background: linear-gradient(100deg, var(--orange-hi), var(--orange) 40%, var(--green) 110%); -webkit-background-clip: text; background-clip: text; color: transparent; }
