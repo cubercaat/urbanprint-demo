@@ -20,6 +20,9 @@
   };
 
   let S = {}; let products = []; let categories = []; let reels = []; let payAvail = { payme: false, click: false };
+  let ratings = {}; let reviews = [];
+  const colorHex = Store.colorHex, colorLabel = Store.colorLabel;
+  const stars = (n, size) => h('span', { class: 'stars', style: { '--v': (n / 5 * 100) + '%', fontSize: (size || 14) + 'px' }, 'aria-label': `${n} / 5` }, h('span', { text: '★★★★★' }));
   let favs = ls.get('up_favs', []);
   const byId = (id) => products.find((p) => p.id === id);
   const cat = (id) => categories.find((c) => c.id === id) || {};
@@ -60,6 +63,23 @@
   menuBtn.addEventListener('click', () => { const o = !nav.classList.contains('open'); nav.classList.toggle('open', o); menuBtn.setAttribute('aria-expanded', String(o)); });
   nav.addEventListener('click', (e) => { if (e.target.closest('a,button')) { nav.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); } });
   $('year').textContent = new Date().getFullYear();
+
+  /* ================= Yorug'/qorong'i mavzu ================= */
+  $('themeBtn').addEventListener('click', () => {
+    const light = document.documentElement.dataset.theme !== 'light';
+    const apply = () => {
+      if (light) document.documentElement.dataset.theme = 'light'; else delete document.documentElement.dataset.theme;
+      document.querySelector('meta[name=theme-color]').content = light ? '#F4F0E8' : '#0E1218';
+    };
+    ls.set('up_theme', light ? 'light' : 'dark');
+    // Mavzu aylana bo'lib tugmadan yoyiladi (brauzer qo'llasa)
+    if (document.startViewTransition && !reduce) {
+      const r = $('themeBtn').getBoundingClientRect();
+      document.documentElement.style.setProperty('--tx', (r.left + r.width / 2) + 'px'); document.documentElement.style.setProperty('--ty', (r.top + r.height / 2) + 'px');
+      document.startViewTransition(apply);
+    } else apply();
+  });
+  try { if (localStorage.getItem('up_theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch { /* yopiq */ }
   document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => { I18N.set(b.dataset.lang); renderAll(); }));
   function paintLang() { document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === I18N.lang))); }
 
@@ -305,7 +325,8 @@
       && (!q || [p.title, p.title_ru, p.title_en, p.description, pick(cat(p.category), 'name')].join(' ').toLowerCase().includes(q)));
     if (sort === 'cheap') list = list.slice().sort((a, b) => a.price - b.price);
     else if (sort === 'expensive') list = list.slice().sort((a, b) => b.price - a.price);
-    else if (sort === 'popular') list = list.slice().sort((a, b) => ((b.badges || []).includes('hit') - (a.badges || []).includes('hit')));
+    else if (sort === 'popular') list = list.slice().sort((a, b) => ((b.badges || []).includes('hit') - (a.badges || []).includes('hit')) || ((ratings[b.id] || {}).count || 0) - ((ratings[a.id] || {}).count || 0));
+    else if (sort === 'foryou') { const aff = affinity(); list = list.slice().sort((a, b) => (aff[b.category] || 0) - (aff[a.category] || 0) || (favs.includes(b.id) - favs.includes(a.id))); }
     return list;
   }
   function tilt(card) {
@@ -318,7 +339,7 @@
     });
     card.addEventListener('pointerleave', () => { card.style.setProperty('--rx', '0deg'); card.style.setProperty('--ry', '0deg'); });
   }
-  const badgeText = (b) => ({ new: t('chip.new'), hit: t('sort.popular').replace(/s$/, ''), sale: I18N.lang === 'ru' ? 'Скидка' : I18N.lang === 'en' ? 'Sale' : 'Chegirma', custom: BADGES.custom })[b] || b;
+  const badgeText = (b) => ({ new: t('chip.new'), hit: I18N.lang === 'ru' ? 'Хит' : I18N.lang === 'en' ? 'Hit' : 'Xit', sale: I18N.lang === 'ru' ? 'Скидка' : I18N.lang === 'en' ? 'Sale' : 'Chegirma', custom: BADGES.custom })[b] || b;
   function priceEl(p, cls) { return h('span', { class: cls || 'price' }, p.oldPrice > p.price ? h('s', { text: money(p.oldPrice, t('common.sum')) }) : null, p.price ? money(p.price, t('common.sum')) : t('shop.price0')); }
   const soldOut = (p) => p.stock != null && p.stock <= 0;
   function favBtn(p, cls) {
@@ -346,6 +367,7 @@
         h('div', { class: 'card-body' },
           h('span', { class: 'card-cat' }, h('i'), pick(cat(p.category), 'name')),
           h('h3', { class: 'card-title', text: title(p), onclick: () => openProduct(p) }),
+          ratings[p.id] ? h('span', { class: 'card-rate' }, stars(ratings[p.id].avg, 13), h('small', { text: `${ratings[p.id].avg} · ${ratings[p.id].count}` })) : null,
           p.stock != null && p.stock > 0 && p.stock <= 5 ? h('span', { class: 'card-stock', text: `${p.stock} ${t('shop.left')}` }) : null,
           h('div', { class: 'card-foot' }, priceEl(p),
             h('button', { class: 'add-btn', type: 'button', disabled: soldOut(p), 'aria-label': `${title(p)} — ${t('shop.add')}`, html: IC.plus, onclick: () => addToCart(p, 1, (p.colors || [])[0] || '') }))));
@@ -368,8 +390,10 @@
   let openModal = null;
   function openProduct(p, start3d) {
     if (openModal) openModal.close();
+    markViewed(p.id);
     const imgs = p.images || [];
     let tt = null; let color = (p.colors || [])[0] || ''; let qty = 1;
+    const modelHex = () => colorHex(color) || p.modelColor || null;
     const main = h('div', { class: 'pd-main' });
     const thumbs = h('div', { class: 'pd-thumbs' });
     const views = imgs.map((src) => ({ type: 'img', src }));
@@ -383,7 +407,7 @@
       else if (v.type === 'img') main.append(h('img', { src: v.src, alt: title(p) }));
       else {
         const cv = h('canvas', { 'aria-label': title(p) + ' 3D' }); main.append(cv, h('span', { class: 'pd-hint', text: t('pd.3d') }));
-        requestAnimationFrame(() => { try { tt = UP3D.createTurntable(cv, p.model, p.modelColor ? parseInt(p.modelColor.slice(1), 16) : undefined); } catch (e) { main.replaceChildren(h('div', { class: 'empty', text: '3D —' })); } });
+        requestAnimationFrame(() => { try { const hx = modelHex(); tt = UP3D.createTurntable(cv, p.model, hx ? parseInt(hx.slice(1), 16) : undefined); } catch (e) { main.replaceChildren(h('div', { class: 'empty', text: '3D —' })); } });
       }
       [...thumbs.children].forEach((x, k) => x.setAttribute('aria-pressed', String(k === i)));
     }
@@ -396,7 +420,15 @@
       h('button', { type: 'button', 'aria-label': '−', text: '−', onclick: () => { qty = Math.max(1, qty - 1); qtyEl.textContent = qty; } }), qtyEl,
       h('button', { type: 'button', 'aria-label': '+', text: '+', onclick: () => { qty = Math.min(p.stock != null ? Math.max(1, p.stock) : 999, qty + 1); qtyEl.textContent = qty; } }));
     const sw = h('div', { class: 'swatches' });
-    (p.colors || []).forEach((c) => sw.append(h('button', { class: 'swatch', type: 'button', 'aria-pressed': String(c === color), text: c, onclick: (e) => { color = c; [...sw.children].forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget))); } })));
+    const has3d = views.some((v) => v.type === '3d');
+    (p.colors || []).forEach((c) => {
+      const hx = colorHex(c);
+      sw.append(h('button', { class: 'swatch', type: 'button', 'aria-pressed': String(c === color), onclick: (e) => {
+        color = c; [...sw.children].forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget)));
+        // 3D model bor bo'lsa, tanlangan rangda jonli ko'rsatamiz
+        if (has3d && hx) { if (views[vi].type !== '3d') show(views.length - 1); else if (tt) tt.setColor(hx); }
+      } }, hx ? h('i', { style: { background: hx } }) : null, colorLabel(c)));
+    });
     const related = products.filter((x) => x.id !== p.id && x.category === p.category).concat(products.filter((x) => x.id !== p.id && x.category !== p.category && x.featured)).slice(0, 4);
     const out = soldOut(p);
     const share = h('button', { class: 'pd-link', type: 'button', html: IC.link + `<span>${UI.esc(t('pd.share'))}</span>`, onclick: async () => {
@@ -408,22 +440,67 @@
       h('div', { class: 'pd-info' },
         h('div', { class: 'card-badges', style: { position: 'static' } }, h('span', { class: 'badge', text: pick(cat(p.category), 'name') }), out ? h('span', { class: 'badge out', text: t('shop.out') }) : null, (p.badges || []).map((b) => h('span', { class: 'badge ' + b, text: badgeText(b) }))),
         h('h2', { text: title(p) }),
+        ratings[p.id] ? h('a', { class: 'pd-rate', href: '#pd-reviews', onclick: (e) => { e.preventDefault(); const el = body.querySelector('.pd-reviews'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, stars(ratings[p.id].avg, 16), h('span', { text: `${ratings[p.id].avg} · ${t('rev.count', { n: ratings[p.id].count })}` })) : null,
         h('div', { class: 'pd-price' }, p.price ? money(p.price, t('common.sum')) : t('shop.price0'), p.oldPrice > p.price ? h('s', { text: money(p.oldPrice, t('common.sum')) }) : null),
         pick(p, 'description') ? h('p', { class: 'muted', text: pick(p, 'description') }) : null,
         p.specs ? h('span', { class: 'pd-specs', text: p.specs }) : null,
-        (p.colors || []).length ? h('div', { class: 'field' }, h('span', { class: 'label', text: t('pd.color') }), sw) : null,
+        (p.colors || []).length ? h('div', { class: 'field' }, h('span', { class: 'label', text: t('pd.color') }), sw, has3d && (p.colors || []).some(colorHex) ? h('small', { class: 'pd-live', text: t('pd.live') }) : null) : null,
         h('div', { class: 'field' }, h('span', { class: 'label', text: t('pd.qty') }), qtyBox),
         h('div', { class: 'pd-actions' },
           h('button', { class: 'btn', type: 'button', disabled: out, text: t('pd.add'), onclick: () => { addToCart(p, qty, color); m.close(); } }),
           h('button', { class: 'btn btn-ghost', type: 'button', disabled: out, text: t('pd.buy'), onclick: () => { addToCart(p, qty, color, true); m.close(); openDrawer('cart', true); } }),
           favBtn(p, 'icon-btn')),
         h('div', { class: 'pd-links' }, p.instagram ? h('a', { class: 'pd-link', href: p.instagram, target: '_blank', rel: 'noopener', html: IC.ig + `<span>${UI.esc(t('pd.ig'))}</span>` }) : null, share)),
+      (function () {
+        const list = reviews.filter((r) => r.productId === p.id);
+        if (!list.length) return null;
+        return h('div', { class: 'pd-reviews' }, h('h4', { text: `${t('rev.kicker')} · ${t('rev.count', { n: list.length })}` }), list.slice(0, 6).map(reviewCard));
+      })(),
       related.length ? h('div', { class: 'pd-related' }, h('h4', { text: t('pd.related') }),
         h('div', { class: 'rel-row' }, related.map((r) => h('button', { class: 'rel', type: 'button', onclick: () => openProduct(r) }, (r.images || [])[0] ? h('img', { src: r.images[0], alt: '', loading: 'lazy' }) : null, h('span', { text: title(r) }))))) : null);
     if (location.hash !== '#p-' + p.id) history.replaceState(null, '', '#p-' + p.id);
     const m = modal(title(p), body, { wide: true, onClose: () => { if (tt) tt.dispose(); if (openModal === m) openModal = null; if (/^#p-/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); } });
     openModal = m;
     show(vi);
+  }
+
+  /* ================= Sharhlar ================= */
+  function reviewCard(r) {
+    return h('figure', { class: 'rev' },
+      h('div', { class: 'rev-head' }, h('span', { class: 'rev-ava', text: (r.name || '?').slice(0, 1).toUpperCase() }),
+        h('div', {}, h('b', { text: r.name }), h('small', { text: `${t('rev.verified')} · ${new Date(r.created).toLocaleDateString(I18N.lang === 'en' ? 'en-GB' : I18N.lang === 'ru' ? 'ru-RU' : 'uz-UZ')}` })), stars(r.rating, 14)),
+      h('blockquote', { text: r.text }),
+      r.productTitle ? h('button', { class: 'rev-prod', type: 'button', text: '→ ' + (byId(r.productId) ? title(byId(r.productId)) : r.productTitle), onclick: () => { const p = byId(r.productId); if (p) openProduct(p); } }) : null,
+      r.reply ? h('div', { class: 'rev-reply' }, h('small', { text: t('rev.reply') }), h('p', { text: r.reply })) : null);
+  }
+  function renderReviews() {
+    const sec = $('sharhlar'); sec.hidden = !reviews.length;
+    if (!reviews.length) return;
+    const avg = Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length * 10) / 10;
+    $('revScore').replaceChildren(h('b', { text: avg.toFixed(1) }), h('div', {}, stars(avg, 20), h('small', { text: t('rev.count', { n: reviews.length }) })));
+    const track = $('revTrack'); track.replaceChildren();
+    const list = reviews.slice(0, 20);
+    // Sharhlar kam bo'lsa ham lenta to'xtovsiz aylanishi uchun takrorlanadi
+    const reps = list.length < 4 ? 4 : 2;
+    for (let k = 0; k < reps; k++) list.forEach((r) => { const c = reviewCard(r); if (k) c.setAttribute('aria-hidden', 'true'); track.append(c); });
+    track.style.setProperty('--dur', Math.max(30, list.length * 9) + 's');
+    $('revMarquee').classList.toggle('static', reduce);
+  }
+
+  /* ================= Yaqinda ko'rilganlar va "Siz uchun" ================= */
+  let viewed = ls.get('up_viewed', []);
+  function markViewed(id) { viewed = [id].concat(viewed.filter((x) => x !== id)).slice(0, 12); ls.set('up_viewed', viewed); renderRecent(); }
+  function affinity() {
+    const a = {};
+    viewed.forEach((id, i) => { const p = byId(id); if (p) a[p.category] = (a[p.category] || 0) + (12 - i); });
+    favs.forEach((id) => { const p = byId(id); if (p) a[p.category] = (a[p.category] || 0) + 8; });
+    cart.forEach((l) => { const p = byId(l.id); if (p) a[p.category] = (a[p.category] || 0) + 10; });
+    return a;
+  }
+  function renderRecent() {
+    const list = viewed.map(byId).filter(Boolean).slice(0, 8);
+    $('recent').hidden = list.length < 2;
+    $('recentRow').replaceChildren(...list.map((p) => h('button', { class: 'rel', type: 'button', onclick: () => openProduct(p) }, (p.images || [])[0] ? h('img', { src: p.images[0], alt: '', loading: 'lazy' }) : null, h('span', { text: title(p) }))));
   }
 
   /* ================= Instagram videolari ================= */
@@ -526,7 +603,7 @@
     const setQty = (l, q) => { const c = cart.find((x) => x.id === l.id && x.color === l.color); if (q <= 0) cart = cart.filter((x) => x !== c); else c.qty = Math.min(l.p.stock != null ? l.p.stock : 999, q); saveCart(); renderDrawer(); };
     ls2.forEach((l) => body.append(h('div', { class: 'line' },
       (l.p.images || [])[0] ? h('img', { src: l.p.images[0], alt: '' }) : h('span'),
-      h('div', {}, h('strong', { text: title(l.p) }), h('small', { text: (l.color ? l.color + ' · ' : '') + money(l.p.price, t('common.sum')) })),
+      h('div', {}, h('strong', { text: title(l.p) }), h('small', { text: (l.color ? colorLabel(l.color) + ' · ' : '') + money(l.p.price, t('common.sum')) })),
       h('div', { class: 'line-right' },
         h('span', { class: 'price', style: { fontSize: '15px' }, text: money(l.p.price * l.qty, t('common.sum')) }),
         h('div', { class: 'qty' }, h('button', { type: 'button', 'aria-label': '−', text: '−', onclick: () => setQty(l, l.qty - 1) }), h('span', { text: l.qty }), h('button', { type: 'button', 'aria-label': '+', text: '+', onclick: () => setQty(l, l.qty + 1) }))))));
@@ -653,14 +730,66 @@
           o.status === 'paid' && auto ? h('div', { class: 'ok-box', text: t('track.paidOk') }) : null,
           h('div', { class: 'sum-row total' }, h('span', { class: 'order-code', style: { fontSize: '22px' }, text: o.code }), h('span', { text: money(o.total, t('common.sum')) })),
           h('ol', { class: 'timeline' }, flow.map((s) => h('li', { class: reached.has(s) || s === o.status ? 'on' : '' }, I18N.status(s), at[s] ? h('small', { text: UI.date(at[s]) }) : null))),
-          h('div', { class: 'muted', style: { fontSize: '14px' } }, o.items.map((i) => h('div', { text: `${i.title}${i.color ? ' (' + i.color + ')' : ''} × ${i.qty}` })))].filter(Boolean));
+          o.status === 'done' ? reviewBlock(o, code.value, phone.value) : h('div', { class: 'muted', style: { fontSize: '14px' } }, o.items.map((i) => h('div', { text: `${i.title}${i.color ? ' (' + colorLabel(i.color) + ')' : ''} × ${i.qty}` }))),
+          chatBlock(o, code.value, phone.value)].filter(Boolean));
+        startPoll(code.value, phone.value, o);
       } catch (ex) { err.textContent = ex.message; }
       finally { btn.disabled = false; }
     });
-    modal(t('track.title'), form2);
+    let poll = 0;
+    // Do'kon javob yozsa, oyna ochiq turganda o'zi yangilanadi
+    function startPoll(c, ph, o) {
+      clearInterval(poll); let n = (o.messages || []).length;
+      poll = setInterval(async () => {
+        if (!document.body.contains(form2)) { clearInterval(poll); return; }
+        try { const x = await Store.track(c, ph); if ((x.messages || []).length !== n) { n = x.messages.length; const box = form2.querySelector('.chat'); if (box) box.replaceWith(chatBlock(x, c, ph)); } } catch { /* tarmoq */ }
+      }, 8000);
+    }
+    modal(t('track.title'), form2, { wide: false, onClose: () => clearInterval(poll) });
     if (auto && code.value && phone.value) form2.requestSubmit();
   }
   document.querySelectorAll('[data-track]').forEach((b) => b.addEventListener('click', () => openTrack()));
+
+  function chatBlock(o, c, ph) {
+    const list = h('div', { class: 'chat-list' }, (o.messages || []).length
+      ? o.messages.map((m) => h('div', { class: 'msg ' + (m.from === 'customer' ? 'me' : 'them') }, h('p', { text: m.text }), h('small', { text: `${m.from === 'customer' ? t('chat.you') : t('chat.shop')} · ${UI.date(m.at)}` })))
+      : [h('p', { class: 'muted', style: { fontSize: '14px' }, text: t('chat.empty') })]);
+    const inp = h('input', { class: 'input', placeholder: t('chat.ph'), maxlength: 1000, 'aria-label': t('chat.ph') });
+    const send = h('button', { class: 'btn btn-sm', type: 'button', text: t('chat.send') });
+    const box = h('div', { class: 'chat' }, h('h4', { text: t('chat.title') }), list, h('div', { class: 'chat-in' }, inp, send));
+    const go = async () => {
+      if (!inp.value.trim()) return; send.disabled = true;
+      try { const x = await Store.message(c, ph, inp.value); box.replaceWith(chatBlock(x, c, ph)); } catch (e) { toast(e.message, true); send.disabled = false; }
+    };
+    send.addEventListener('click', go);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+    return box;
+  }
+  function reviewBlock(o, c, ph) {
+    const done = new Set(o.reviewed || []);
+    const seen = new Set();
+    const items = o.items.filter((i) => !seen.has(i.id) && seen.add(i.id));
+    return h('div', { class: 'stack-sm' }, items.map((i) => {
+      const row = h('div', { class: 'rv-item' });
+      const head = h('div', { class: 'rv-head' }, i.image ? h('img', { src: i.image, alt: '' }) : h('span'), h('strong', { text: i.title }));
+      if (done.has(i.id)) { row.append(head, h('span', { class: 'badge', text: '✓ ' + t('rev.done') })); return row; }
+      const btn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: '★ ' + t('rev.leave') });
+      btn.addEventListener('click', () => {
+        let val = 0;
+        const starRow = h('div', { class: 'star-pick', role: 'radiogroup', 'aria-label': t('rev.stars') }, [1, 2, 3, 4, 5].map((n) => h('button', { type: 'button', role: 'radio', 'aria-checked': 'false', 'aria-label': n + ' / 5', text: '★', onclick: () => { val = n; [...starRow.children].forEach((b, k) => { b.classList.toggle('on', k < n); b.setAttribute('aria-checked', String(k === n - 1)); }); } })));
+        const txt = h('textarea', { class: 'textarea', style: { minHeight: '80px' }, maxlength: 1200, placeholder: t('rev.textPh'), 'aria-label': t('rev.textPh') });
+        const e2 = h('p', { class: 'form-error', role: 'alert' });
+        const sendB = h('button', { class: 'btn btn-sm', type: 'button', text: t('rev.send'), onclick: async () => {
+          sendB.disabled = true; e2.textContent = '';
+          try { await Store.review({ code: c, phone: ph, productId: i.id, rating: val, text: txt.value }); row.replaceChildren(head, h('div', { class: 'ok-box', text: t('rev.thanks') })); }
+          catch (ex) { e2.textContent = ex.message; sendB.disabled = false; }
+        } });
+        row.replaceChildren(head, starRow, txt, e2, sendB);
+      });
+      row.append(head, btn); return row;
+    }));
+  }
 
   /* ================= Maxsus buyurtma formasi ================= */
   (function customForm() {
@@ -705,7 +834,7 @@
   /* ================= Yig'ish ================= */
   function renderAll() {
     I18N.apply(); paintLang(); applySettings();
-    renderCats(); showcase.render(); renderChips(); renderProducts(); renderReels(); renderCounts();
+    renderCats(); showcase.render(); renderChips(); renderProducts(); renderReels(); renderReviews(); renderRecent(); renderCounts();
     if (drawer.classList.contains('open')) renderDrawer();
     if (I18N.onChange) I18N.onChange();
   }
@@ -718,6 +847,7 @@
   (function skeletons() { const g = $('products'); for (let i = 0; i < 4; i++) g.append(h('div', { class: 'skeleton' })); })();
   Store.catalog().then((c) => {
     S = c.settings || {}; categories = c.categories || []; products = c.products || []; reels = c.reels || []; payAvail = c.payments || payAvail;
+    ratings = c.ratings || {}; reviews = c.reviews || [];
     renderAll(); loader.done();
     fromHash();
     // To'lovdan qaytganda buyurtma holatini ko'rsatamiz
@@ -727,4 +857,13 @@
     $('products').replaceChildren(h('div', { class: 'empty', text: 'Mahsulotlarni yuklab boʻlmadi. Sahifani yangilang.' }));
     loader.done();
   });
+
+  /* ================= Ilova (PWA): telefonga o'rnatish va internetsiz ochilish ================= */
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !/[?&]nosw\b/.test(location.search)) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* qo'llanmaydi */ }));
+  }
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; $('installBtn').hidden = false; });
+  $('installBtn').addEventListener('click', async () => { if (!installEvt) return; installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === 'accepted') { toast(t('pwa.installed')); $('installBtn').hidden = true; } installEvt = null; });
+  addEventListener('offline', () => toast(t('pwa.offline'), true));
 })();

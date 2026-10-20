@@ -8,6 +8,23 @@
 Bu versiya foydalanuvchining boshqa loyihalaridagi eng yaxshi qismlarni birlashtiradi:
 `cubercaat/3durbanprint` dan Payme va Click toʻlovlari, `cubercaat/dokon-tizimi` dan SQLite baza, promokod, 3 til, sevimlilar, xaritada manzil, buyurtmani kuzatish, CSV eksport, chek va Docker/Render sozlamasi.
 
+## Yangi: premium versiya
+
+Boshqa loyihalardan olingan va yangi qoʻshilgan imkoniyatlar:
+
+- **Sharh va reyting** (`mevazor` dan): faqat buyurtmasi yetkazilgan mijoz, har bir mahsulotga bir marta baho qoldiradi. Admin tasdiqlaydi va javob yozadi. Saytda yulduzlar, “Mijozlar fikri” lentasi va mahsulot oynasidagi sharhlar. Soxta sharh yoʻq — boshlangʻich maʼlumotda sharh qoʻshilmagan
+- **Buyurtma boʻyicha yozishma** (`mevazor` dan): mijoz “Buyurtmam qayerda?” oynasida doʻkonga yozadi, javob shu yerda chiqadi (8 soniyada yangilanadi). Adminda javobsiz xabarlar belgilanadi, Telegramga ham keladi
+- **Xodimlar va rollar** (`mevazor`, `attendly` dan): Egasi (`admin`), Menejer, Operator. Har biri faqat oʻz boʻlimlarini koʻradi; xodim oʻchirilsa yoki paroli oʻzgarsa, sessiyasi darhol yopiladi
+- **Amallar jurnali:** kim, qachon, nimani oʻzgartirgani
+- **Yorugʻ/qorongʻi mavzu** (`dokon-demo` dan), tugmadan aylana boʻlib yoyiladi; admin panelda ham
+- **Jonli rang konfiguratori:** mahsulot oynasida rang tanlansa, 3D model shu rangga silliq boʻyaladi
+- **“Siz uchun” va yaqinda koʻrilganlar** (`aniuz` dagi tavsiyalar gʻoyasi): koʻrilgan, sevimli va savatdagi mahsulotlarga qarab saralash
+- **Chekda QR-kod:** skanerlansa buyurtma kuzatish oynasi ochiladi
+- **Ilova (PWA):** telefonga oʻrnatiladi, internet uzilsa ham saqlangan sahifa ochiladi
+- `scripts/e2e.mjs` — serverning 27 ta tekshiruvi (`node scripts/e2e.mjs http://localhost:3000`, server `ADMIN_PASSWORD=testParol123` bilan ishlab turishi kerak)
+
+**Admin panelga kirish (demo):** login `admin`, parol `admin`. Serverda: login `admin`, parol `ADMIN_PASSWORD`.
+
 ## Doʻkon sahifasi
 
 - **Yuklanish ekrani:** logo qatlam-qatlam “chop etiladi” (sessiyada bir marta)

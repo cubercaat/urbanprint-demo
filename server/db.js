@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pay_tx ON payments(provider, provider_trans_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created);
+CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY, product_id INTEGER, status TEXT, created INTEGER, doc TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
+CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY, login TEXT UNIQUE NOT NULL, doc TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, created INTEGER, doc TEXT NOT NULL);
 `);
 
 const parse = (row) => (row ? Object.assign(JSON.parse(row.doc), { id: row.id }) : null);
@@ -123,6 +127,36 @@ function insertRequest(r) {
 function updateRequest(r) { const { id, ...doc } = r; db.prepare('UPDATE requests SET status = ?, doc = ? WHERE id = ?').run(doc.status, JSON.stringify(doc), id); return getRequest(id); }
 const deleteRequest = (id) => db.prepare('DELETE FROM requests WHERE id = ?').run(id);
 
+/* ---------- Sharhlar ---------- */
+const listReviews = () => db.prepare('SELECT id, doc FROM reviews ORDER BY id DESC').all().map(parse);
+const getReview = (id) => parse(db.prepare('SELECT id, doc FROM reviews WHERE id = ?').get(id));
+function insertReview(r) {
+  const { id, ...doc } = r;
+  const res = db.prepare('INSERT INTO reviews (product_id, status, created, doc) VALUES (?, ?, ?, ?)').run(doc.productId, doc.status, doc.created, JSON.stringify(doc));
+  return getReview(Number(res.lastInsertRowid));
+}
+function updateReview(r) { const { id, ...doc } = r; db.prepare('UPDATE reviews SET status = ?, doc = ? WHERE id = ?').run(doc.status, JSON.stringify(doc), id); return getReview(id); }
+const deleteReview = (id) => db.prepare('DELETE FROM reviews WHERE id = ?').run(id);
+
+/* ---------- Xodimlar ---------- */
+const listStaff = () => db.prepare('SELECT id, doc FROM staff ORDER BY id').all().map(parse);
+const getStaff = (id) => parse(db.prepare('SELECT id, doc FROM staff WHERE id = ?').get(id));
+const findStaffByLogin = (login) => parse(db.prepare('SELECT id, doc FROM staff WHERE login = ?').get(String(login || '').trim().toLowerCase()));
+function saveStaff(u) {
+  const { id, ...doc } = u;
+  if (id) { db.prepare('UPDATE staff SET login = ?, doc = ? WHERE id = ?').run(doc.login, JSON.stringify(doc), id); return getStaff(id); }
+  const r = db.prepare('INSERT INTO staff (login, doc) VALUES (?, ?)').run(doc.login, JSON.stringify(doc));
+  return getStaff(Number(r.lastInsertRowid));
+}
+const deleteStaff = (id) => db.prepare('DELETE FROM staff WHERE id = ?').run(id);
+
+/* ---------- Amallar jurnali (oxirgi 2000 ta saqlanadi) ---------- */
+function addAudit(entry) {
+  db.prepare('INSERT INTO audit (created, doc) VALUES (?, ?)').run(entry.at, JSON.stringify(entry));
+  db.prepare('DELETE FROM audit WHERE id <= (SELECT MAX(id) - 2000 FROM audit)').run();
+}
+const listAudit = (n) => db.prepare('SELECT id, doc FROM audit ORDER BY id DESC LIMIT ?').all(n || 300).map(parse);
+
 /* ---------- Birinchi ishga tushish: boshlang'ich ma'lumot ---------- */
 function seedIfEmpty() {
   if (db.prepare("SELECT 1 FROM kv WHERE key = 'settings'").get()) return;
@@ -152,7 +186,7 @@ function seedIfEmpty() {
 seedIfEmpty();
 
 function dump() {
-  return { settings: getSettings(), categories: listCategories(), products: listProducts(), reels: listReels(), promos: listPromos(), orders: listOrders(), requests: listRequests() };
+  return { settings: getSettings(), categories: listCategories(), products: listProducts(), reels: listReels(), promos: listPromos(), orders: listOrders(), requests: listRequests(), reviews: listReviews() };
 }
 
 module.exports = {
@@ -163,4 +197,6 @@ module.exports = {
   listPromos, findPromo, savePromo, deletePromo,
   listOrders, getOrder, getOrderByCode, insertOrder, updateOrder, deleteOrder,
   listRequests, getRequest, insertRequest, updateRequest, deleteRequest,
+  listReviews, getReview, insertReview, updateReview, deleteReview,
+  listStaff, getStaff, findStaffByLogin, saveStaff, deleteStaff, addAudit, listAudit,
 };

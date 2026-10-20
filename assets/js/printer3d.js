@@ -476,9 +476,12 @@
     const ground = new THREE.Mesh(new THREE.CircleGeometry(6, 48), new THREE.ShadowMaterial({ opacity: 0.4 }));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
     const spin = new THREE.Group(); scene.add(spin);
-    let H = 2;
-    if (kind === 'keychain') { const k = buildKeychain({ base: color || 0xf5892a }); k.position.y = 0.05; spin.add(k); H = 0.8; }
-    else { const o = buildObject(KINDS[kind] ? kind : 'lamp', color); o.setLayers(o.N); spin.add(o.group); H = o.H; }
+    let H = 2, mainMat = null;
+    if (kind === 'keychain') { const k = buildKeychain({ base: color || 0xf5892a }); k.position.y = 0.05; spin.add(k); H = 0.8; mainMat = k.children[0] && k.children[0].material; }
+    else { const o = buildObject(KINDS[kind] ? kind : 'lamp', color); o.setLayers(o.N); spin.add(o.group); H = o.H; mainMat = o.layers[0].material; }
+    // Rang tanlanganda filament rangi silliq almashadi
+    let colorTo = null;
+    function setColor(hex) { if (!mainMat || hex == null) return; colorTo = C(typeof hex === 'string' ? parseInt(hex.replace('#', ''), 16) : hex); }
     let drag = false, lx = 0, vel = 0.6, rot = 0, build = 0;
     canvas.addEventListener('pointerdown', (e) => { drag = true; lx = e.clientX; canvas.setPointerCapture(e.pointerId); });
     canvas.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - lx; lx = e.clientX; rot += dx * 0.012; vel = dx * 0.6; });
@@ -497,11 +500,12 @@
       spin.rotation.y = rot;
       build = Math.min(1, build + dt * 0.9);
       spin.scale.set(1, smooth(build), 1);
+      if (colorTo) { mainMat.color.lerp(colorTo, Math.min(1, dt * 8)); if (Math.abs(mainMat.color.r - colorTo.r) + Math.abs(mainMat.color.g - colorTo.g) + Math.abs(mainMat.color.b - colorTo.b) < 0.002) { mainMat.color.copy(colorTo); colorTo = null; } }
       renderer.render(scene, cam);
       raf = requestAnimationFrame(loop);
     }
     raf = requestAnimationFrame(loop);
-    return { resize, dispose() { alive = false; cancelAnimationFrame(raf); renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); } };
+    return { resize, setColor, dispose() { alive = false; cancelAnimationFrame(raf); renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); } };
   }
 
   g.UP3D = { THREE, studioEnv, studioScene, buildPrinter, buildObject, buildKeychain, createHero, createLoop, createTurntable, mats, roundedBox, KINDS, NOZ_Y };

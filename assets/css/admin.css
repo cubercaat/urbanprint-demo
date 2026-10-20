@@ -11,7 +11,7 @@ body.admin { background: #0A0E13; font-size: 16px; }
 
 /* ---------- Karkas ---------- */
 .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
-.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 6px; padding: 22px 14px; border-right: 1px solid var(--line); background: #0D1013; }
+.side { position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; gap: 6px; padding: 22px 14px; border-right: 1px solid var(--line); background: var(--chamber); }
 .side .logo { padding: 4px 10px 22px; font-size: 16px; }
 .side a.tab { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; color: var(--muted); font-weight: 500; transition: background .2s, color .2s; }
 .side a.tab svg { flex: none; opacity: .8; }
@@ -176,3 +176,23 @@ a.kpi:hover { border-color: var(--fil); }
 .imgs .im { cursor: grab; }
 .imgs .im.dragging { opacity: .4; }
 .row.order > div > small { display: block; }
+
+/* =================== Premium: rollar, yozishma, sharhlar, jurnal =================== */
+.who { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: var(--plate-2, #1F2429); }
+.who > div { display: flex; flex-direction: column; min-width: 0; }
+.who small { color: var(--faint); font-size: 12.5px; }
+.who-ava { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; text-transform: uppercase; color: #1A0B00; background: linear-gradient(135deg, #FFB067, #FF7A1A); }
+.row.unread { border-color: color-mix(in srgb, #FF7A1A 55%, transparent); box-shadow: inset 3px 0 0 #FF7A1A; }
+.msg-dot { display: inline-block; width: 9px; height: 9px; margin-left: 6px; border-radius: 50%; background: #FF7A1A; box-shadow: 0 0 0 0 rgba(255,122,26,.6); animation: ping 1.6s infinite; vertical-align: middle; }
+.kpi.hot { border-color: color-mix(in srgb, #FF7A1A 50%, transparent); background: linear-gradient(160deg, rgba(255,122,26,.12), transparent 60%), var(--surface, #171B1F); }
+.row-detail .chat { grid-column: 1 / -1; }
+.row-detail .chat-list { max-height: 220px; }
+.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.roles > div { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 14px; background: var(--bg-2, #111417); border: 1px solid var(--line); }
+.roles small { color: var(--muted); }
+.stars-a { color: #FFB224; letter-spacing: .1em; font-size: 16px; white-space: nowrap; }
+.audit { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.audit-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: 14px; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.audit-row:nth-child(odd) { background: rgba(255,255,255,.015); }
+.audit-row:last-child { border-bottom: 0; }
+@media (max-width: 800px) { .audit-row { grid-template-columns: minmax(0, 1fr) auto; } .audit-row > :nth-child(4) { grid-column: 1 / -1; } }

@@ -89,5 +89,7 @@ window.I18N = (function () {
     document.documentElement.lang = lang;
   }
   function set(l) { if (!T[l]) return; lang = l; try { localStorage.setItem('up_lang', l); } catch { /* yopiq */ } apply(); }
-  return { t, pick, apply, set, status: (k) => (STATUS[lang] || STATUS.uz)[k] || k, get lang() { return lang; }, langs: ['uz', 'ru', 'en'] };
+  /* Qo'shimcha matnlar boshqa fayldan qo'shiladi */
+  function extend(add) { Object.keys(add).forEach((l) => { T[l] = Object.assign(T[l] || {}, add[l]); }); }
+  return { t, pick, apply, set, extend, status: (k) => (STATUS[lang] || STATUS.uz)[k] || k, get lang() { return lang; }, langs: ['uz', 'ru', 'en'] };
 })();

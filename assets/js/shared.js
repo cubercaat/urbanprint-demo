@@ -91,5 +91,75 @@
     return [head].concat(rows).map((r) => r.map(q).join(';')).join('\r\n');
   }
 
-  return { clean, normPhone, fmtPhone, money, ORDER_STATUS, REQUEST_STATUS, BADGES, SETTINGS_TEXT, applyPromo, priceOrder, ordersCsv };
+  /* ---------- Rang nomidan filament rangi (3D modelni jonli bo'yash uchun) ----------
+     Admin rang nomiga "#RRGGBB" yozsa (masalan "Feruza #30C9B0"), aynan shu rang olinadi. */
+  const COLOR_WORDS = [
+    [/#([0-9a-f]{6})\b/i, null],
+    [/to[ʻ'‘`]?q sariq|оранж|orange|apelsin/i, '#FF7A1A'], [/oltin|золот|gold/i, '#D4A537'], [/sariq|жёлт|желт|yellow/i, '#F5C518'],
+    [/qizil|красн|red/i, '#E0362C'], [/pushti|розов|pink/i, '#F07AA8'], [/binafsha|фиолет|purple|violet/i, '#7B5CD6'],
+    [/feruza|бирюз|turquoise|teal/i, '#30C9B0'], [/ko[ʻ'‘`]?k|син|голуб|blue/i, '#2F7BE0'], [/yashil|зел|green/i, '#5DBB3A'],
+    [/krem|кремов|cream|beige|bej/i, '#E8D9B5'], [/jigarrang|корич|brown/i, '#8A5A3B'], [/kulrang|сер|grey|gray/i, '#8A9097'],
+    [/qora|чёрн|черн|black/i, '#25282C'], [/oq|бел|white/i, '#F2EFE8'],
+  ];
+  function colorHex(name) {
+    const s = String(name || '');
+    // "Qora-yashil" kabi nomlarda birinchi aytilgan rang olinadi
+    let best = null, at = Infinity;
+    for (const [re, hex] of COLOR_WORDS) {
+      const m = re.exec(s); if (!m) continue;
+      if (!hex) return '#' + m[1].toUpperCase();
+      if (m.index < at) { at = m.index; best = hex; }
+    }
+    return best;
+  }
+  const colorLabel = (name) => String(name || '').replace(/\s*#[0-9a-f]{6}\b/i, '').trim();
+
+  /* ---------- Sharhlar ---------- */
+  const REVIEW_STATUS = { pending: ['Tekshiruvda', 'warn'], approved: ['Saytda', 'ok'], hidden: ['Yashirilgan', 'bad'] };
+  /* Faqat yetkazilgan buyurtmadagi mahsulotga, bir marta baho berish mumkin */
+  function checkReview({ order, phone, productId, rating, text, name }) {
+    if (!order || order.phone !== normPhone(phone)) return { error: 'Buyurtma topilmadi. Raqam va telefonni tekshiring' };
+    if (order.status !== 'done') return { error: 'Baho buyurtma yetkazilgandan keyin qoldiriladi' };
+    const item = order.items.find((i) => i.id === Number(productId));
+    if (!item) return { error: 'Bu mahsulot buyurtmada yoʻq' };
+    if ((order.reviewed || []).includes(item.id)) return { error: 'Bu mahsulotga allaqachon baho bergansiz' };
+    const r = Math.round(Number(rating));
+    if (!(r >= 1 && r <= 5)) return { error: 'Yulduzchalardan birini tanlang' };
+    const t = clean(text, 1200);
+    if (t.length < 3) return { error: 'Bir-ikki soʻz yozib qoldiring' };
+    // Ismdan faqat birinchi soʻz chiqadi (familiya saytda koʻrinmaydi)
+    const nm = clean(name || order.name, 40).split(/\s+/)[0] || 'Mijoz';
+    return { review: { productId: item.id, productTitle: item.title, orderCode: order.code, rating: r, text: t, name: nm, status: 'pending', reply: '', created: Date.now() } };
+  }
+  function ratings(reviews) {
+    const out = {};
+    reviews.forEach((r) => { if (r.status !== 'approved') return; const o = out[r.productId] || (out[r.productId] = { sum: 0, count: 0 }); o.sum += r.rating; o.count++; });
+    Object.values(out).forEach((o) => { o.avg = Math.round(o.sum / o.count * 10) / 10; delete o.sum; });
+    return out;
+  }
+  const publicReview = (r) => ({ id: r.id, productId: r.productId, productTitle: r.productTitle, name: r.name, rating: r.rating, text: r.text, reply: r.reply || '', created: r.created });
+
+  /* ---------- Buyurtma bo'yicha yozishma ---------- */
+  function addMessage(order, from, text, by) {
+    const t = clean(text, 1000);
+    if (t.length < 1) return { error: 'Xabar boʻsh' };
+    order.messages = (order.messages || []).concat({ from, text: t, by: by || '', at: Date.now() }).slice(-200);
+    order.unread = from === 'customer';
+    return { order };
+  }
+  // Mijozga ko'rsatiladigan buyurtma ma'lumoti (ichki eslatmalarsiz)
+  const publicOrder = (o) => ({ code: o.code, status: o.status, history: o.history || [], items: o.items, total: o.total, fee: o.fee, discount: o.discount, created: o.created,
+    delivery: o.delivery, payment: o.payment, messages: (o.messages || []).map((m) => ({ from: m.from, text: m.text, at: m.at })), reviewed: o.reviewed || [] });
+
+  /* ---------- Xodimlar va ruxsatlar ---------- */
+  const ROLES = { owner: 'Egasi', manager: 'Menejer', operator: 'Operator' };
+  const PERMS = {
+    owner: ['*'],
+    manager: ['dash', 'orders', 'requests', 'reviews', 'customers', 'products', 'categories', 'reels', 'promos'],
+    operator: ['dash', 'orders', 'requests', 'reviews', 'customers'],
+  };
+  const can = (role, mod) => { const p = PERMS[role] || []; return p.includes('*') || p.includes(mod); };
+
+  return { clean, normPhone, fmtPhone, money, ORDER_STATUS, REQUEST_STATUS, BADGES, SETTINGS_TEXT, applyPromo, priceOrder, ordersCsv,
+    colorHex, colorLabel, REVIEW_STATUS, checkReview, ratings, publicReview, addMessage, publicOrder, ROLES, PERMS, can };
 });

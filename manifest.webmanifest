@@ -1,0 +1,16 @@
+{
+  "name": "3D UrbanPrint",
+  "short_name": "UrbanPrint",
+  "description": "3D printerda yasalgan svetilnik, brelok, figura va sovgʻalar",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0E1218",
+  "theme_color": "#0E1218",
+  "lang": "uz",
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/img/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

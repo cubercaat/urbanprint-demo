@@ -1,0 +1,45 @@
+const B = process.argv[2];
+let jar = '';
+async function j(method, url, body, cookie) {
+  const r = await fetch(B + url, { method, headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const sc = r.headers.get('set-cookie'); const t = await r.text(); let d; try { d = JSON.parse(t); } catch { d = t; }
+  return { s: r.status, d, sc };
+}
+const ok = (c, m) => { console.log((c ? 'OK  ' : 'FAIL') + ' ' + m); if (!c) process.exitCode = 1; };
+const cat = (await j('GET', '/api/catalog')).d;
+ok(cat.ratings && Array.isArray(cat.reviews), 'catalog has ratings/reviews');
+const o = (await j('POST', '/api/orders', { name: 'Ali Valiyev', phone: '901112233', address: 'Toshkent, Chilonzor 1', items: [{ id: 1, qty: 1 }, { id: 3, qty: 2 }] })).d;
+ok(o.code, 'order created ' + o.code);
+let r = await j('POST', '/api/reviews', { code: o.code, phone: '901112233', productId: 1, rating: 5, text: 'Zoʻr' });
+ok(r.s === 400 && /yetkazilgandan/.test(r.d.error), 'review blocked before delivered');
+r = await j('POST', '/api/messages', { code: o.code, phone: '901112233', text: 'Salom, qachon tayyor?' });
+ok(r.s === 200 && r.d.messages.length === 1 && !('adminNote' in r.d), 'customer message');
+r = await j('POST', '/api/messages', { code: o.code, phone: '909999999', text: 'x' }); ok(r.s === 404, 'message wrong phone 404');
+r = await j('POST', '/api/admin/login', { login: 'admin', password: 'bad' }); ok(r.s === 401, 'owner bad pw');
+r = await j('POST', '/api/admin/login', { password: 'testParol123' }); ok(r.s === 200, 'owner login (no login field)');
+const owner = r.sc.split(';')[0];
+const data = (await j('GET', '/api/admin/data', null, owner)).d;
+ok(data.staff && data.audit && data.me.role === 'owner', 'owner sees staff+audit');
+const ord = data.orders.find((x) => x.code === o.code); ok(ord.unread === true, 'order unread flag');
+r = await j('POST', `/api/admin/orders/${ord.id}/messages`, { text: 'Ertaga tayyor boʻladi' }, owner); ok(r.s === 200 && r.d.unread === false && r.d.messages[1].by === 'Egasi', 'shop reply');
+r = await j('PATCH', `/api/admin/orders/${ord.id}`, { status: 'done' }, owner); ok(r.d.status === 'done', 'order done');
+r = await j('POST', '/api/reviews', { code: o.code, phone: '+998 90 111 22 33', productId: 1, rating: 5, text: 'Juda chiroyli lampa!' }); ok(r.s === 200 && r.d.status === 'pending', 'review submitted');
+r = await j('POST', '/api/reviews', { code: o.code, phone: '901112233', productId: 1, rating: 4, text: 'yana' }); ok(r.s === 400, 'duplicate review blocked');
+r = await j('POST', '/api/reviews', { code: o.code, phone: '901112233', productId: 7, rating: 4, text: 'yana' }); ok(r.s === 400, 'review for item not in order blocked');
+let c2 = (await j('GET', '/api/catalog')).d; ok(!c2.reviews.length, 'pending review not public');
+const rev = (await j('GET', '/api/admin/data', null, owner)).d.reviews[0];
+r = await j('PATCH', `/api/admin/reviews/${rev.id}`, { status: 'approved', reply: 'Rahmat!' }, owner); ok(r.d.status === 'approved', 'review approved');
+c2 = (await j('GET', '/api/catalog')).d; ok(c2.reviews.length === 1 && c2.ratings[1].avg === 5 && c2.reviews[0].name === 'Ali' && !c2.reviews[0].orderCode, 'public review + rating, first name only');
+r = await j('POST', '/api/admin/staff', { login: 'operator1', name: 'Dilnoza', role: 'operator', password: 'short' }, owner); ok(r.s === 400, 'short password rejected');
+r = await j('POST', '/api/admin/staff', { login: 'operator1', name: 'Dilnoza', role: 'operator', password: 'operParol1' }, owner); ok(r.s === 200 && !r.d.hash, 'staff created, no hash leaked');
+const sid = r.d.id;
+r = await j('POST', '/api/admin/login', { login: 'operator1', password: 'operParol1' }); ok(r.s === 200, 'staff login');
+const op = r.sc.split(';')[0];
+const od = (await j('GET', '/api/admin/data', null, op)).d; ok(!od.staff && !od.promos && od.me.role === 'operator', 'operator data filtered');
+r = await j('PUT', '/api/admin/settings', { phone: '1' }, op); ok(r.s === 403, 'operator cannot change settings');
+r = await j('POST', '/api/admin/products', { title: 'X', category: 'brelok' }, op); ok(r.s === 403, 'operator cannot add product');
+r = await j('PATCH', `/api/admin/orders/${ord.id}`, { adminNote: 'tekshirildi' }, op); ok(r.s === 200, 'operator can edit order');
+r = await j('PUT', `/api/admin/staff/${sid}`, { active: false }, owner); ok(r.s === 200, 'staff deactivated');
+r = await j('GET', '/api/admin/data', null, op); ok(r.s === 401, 'deactivated session revoked');
+const au = (await j('GET', '/api/admin/data', null, owner)).d.audit;
+ok(au.some((a) => a.user === 'Dilnoza' && a.action === 'Buyurtma oʻzgardi') && au.some((a) => a.action === 'Kirish'), 'audit log entries: ' + au.length);

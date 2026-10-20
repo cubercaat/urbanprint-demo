@@ -88,22 +88,36 @@ async function notify(text) {
 const orderText = (o, head) => `${head} ${o.code}\n${o.name}, +${o.phone}\n${o.delivery === 'pickup' ? 'Olib ketadi' : o.address}${o.location ? `\nhttps://maps.google.com/?q=${o.location.lat},${o.location.lng}` : ''}\n\n${o.items.map((i) => `• ${i.title}${i.color ? ` (${i.color})` : ''} × ${i.qty}`).join('\n')}\n\n${o.discount ? `Chegirma: −${money(o.discount)} (${o.promo})\n` : ''}${o.fee ? `Yetkazish: ${money(o.fee)}\n` : ''}Jami: ${money(o.total)} · ${({ cash: 'naqd/karta', payme: 'Payme', click: 'Click' })[o.payment]}${o.note ? `\nIzoh: ${o.note}` : ''}`;
 pay.setOnPaid((o) => notify(orderText(o, '✅ Toʻlandi:')));
 
-/* ---------- Admin sessiyasi: imzolangan cookie ---------- */
+/* ---------- Admin sessiyasi: imzolangan cookie ----------
+   Egasi "admin" login va ADMIN_PASSWORD bilan kiradi. Xodimlar (menejer, operator) o'z login/paroli bilan.
+   Token: <foydalanuvchi>.<parol versiyasi>.<muddat>.<imzo> — parol o'zgarsa yoki xodim o'chirilsa, eski sessiya darhol yaroqsiz. */
 const COOKIE = 'up_admin';
 const sign = (v) => crypto.createHmac('sha256', SECRET).update(v).digest('hex');
-function makeToken() { const v = `admin.${Date.now() + 7 * 864e5}`; return `${v}.${sign(v)}`; }
-function validToken(t) {
+function makeToken(uid, ver) { const v = `${uid}.${ver || 0}.${Date.now() + 7 * 864e5}`; return `${v}.${sign(v)}`; }
+function parseToken(t) {
   const parts = String(t || '').split('.');
-  if (parts.length !== 3) return false;
-  const good = Buffer.from(sign(`${parts[0]}.${parts[1]}`)), got = Buffer.from(parts[2]);
-  return good.length === got.length && crypto.timingSafeEqual(good, got) && Number(parts[1]) > Date.now();
+  if (parts.length !== 4) return null;
+  const good = Buffer.from(sign(parts.slice(0, 3).join('.'))), got = Buffer.from(parts[3]);
+  if (good.length !== got.length || !crypto.timingSafeEqual(good, got) || Number(parts[2]) < Date.now()) return null;
+  return { uid: parts[0], ver: Number(parts[1]) };
 }
+function hashPassword(pw, salt) { salt = salt || crypto.randomBytes(16).toString('hex'); return { salt, hash: crypto.scryptSync(String(pw), salt, 32).toString('hex') }; }
+function checkPassword(pw, u) { const h = Buffer.from(hashPassword(pw, u.salt).hash, 'hex'), g = Buffer.from(u.hash || '', 'hex'); return h.length === g.length && crypto.timingSafeEqual(h, g); }
+const OWNER = { id: 'owner', name: 'Egasi', role: 'owner', login: 'admin' };
+function currentUser(req) {
+  const t = parseToken(cookies(req)[COOKIE]); if (!t) return null;
+  if (t.uid === 'owner') return OWNER;
+  const m = /^s(\d+)$/.exec(t.uid); if (!m) return null;
+  const u = D.getStaff(Number(m[1]));
+  if (!u || u.active === false || (u.ver || 0) !== t.ver) return null;
+  return { id: u.id, name: u.name, role: u.role, login: u.login };
+}
+const publicStaff = (u) => ({ id: u.id, login: u.login, name: u.name, role: u.role, active: u.active !== false, created: u.created, lastLogin: u.lastLogin || 0 });
 function cookies(req) {
   const o = {};
   (req.headers.cookie || '').split(';').forEach((c) => { const i = c.indexOf('='); if (i > 0) o[c.slice(0, i).trim()] = decodeURIComponent(c.slice(i + 1).trim()); });
   return o;
 }
-const isAdmin = (req) => validToken(cookies(req)[COOKIE]);
 function limiter(max, windowMs, m) {
   const hits = new Map();
   return (req) => {
@@ -178,7 +192,7 @@ function send(res, status, obj, type) {
   res.writeHead(status, { 'Content-Type': type || 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(body);
 }
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.webmanifest': 'application/manifest+json', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.woff2': 'font/woff2' };
 function serveFile(req, res, file, maxAge) {
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) return send(res, 404, { error: 'Topilmadi' });
@@ -195,7 +209,7 @@ function safeJoin(base, rel) { const p = path.resolve(base, '.' + path.sep + rel
 const routes = [];
 const route = (method, pattern, handler, opts) => {
   const keys = []; const re = new RegExp('^' + pattern.replace(/:(\w+)/g, (_, k) => { keys.push(k); return '([^/]+)'; }) + '$');
-  routes.push({ method, re, keys, handler, admin: !!(opts && opts.admin), raw: !!(opts && opts.raw) });
+  routes.push({ method, re, keys, handler, admin: opts && opts.admin, raw: !!(opts && opts.raw), audit: opts && opts.audit });
 };
 
 const publicSettings = () => { const s = D.getSettings(); return s; };
@@ -206,7 +220,12 @@ route('GET', '/api/catalog', () => ({
   products: D.listProducts().filter((p) => p.active !== false),
   reels: D.listReels().filter((r) => r.active !== false),
   payments: pay.availability(),
+  ...reviewsPublic(),
 }));
+function reviewsPublic() {
+  const all = D.listReviews();
+  return { ratings: shared.ratings(all), reviews: all.filter((r) => r.status === 'approved').slice(0, 300).map(shared.publicReview) };
+}
 
 route('POST', '/api/promo', async (req) => {
   trackLimit(req);
@@ -249,7 +268,34 @@ route('GET', '/api/track', (req) => {
   const q = new URL(req.url, 'http://x').searchParams;
   const o = D.getOrderByCode(q.get('code'));
   if (!o || o.phone !== normPhone(q.get('phone'))) fail(404, 'Buyurtma topilmadi. Raqam va telefonni tekshiring');
-  return { code: o.code, status: o.status, history: o.history || [], items: o.items, total: o.total, fee: o.fee, discount: o.discount, created: o.created, delivery: o.delivery, payment: o.payment };
+  return shared.publicOrder(o);
+});
+
+/* Mijoz buyurtma bo'yicha do'konga yozadi */
+const msgLimit = limiter(12, 60e3, 'Biroz kuting va qayta yozing');
+route('POST', '/api/messages', async (req) => {
+  msgLimit(req);
+  const b = await readJson(req);
+  const o = D.getOrderByCode(b.code);
+  if (!o || o.phone !== normPhone(b.phone)) fail(404, 'Buyurtma topilmadi. Raqam va telefonni tekshiring');
+  const r = shared.addMessage(o, 'customer', b.text);
+  if (r.error) fail(400, r.error);
+  D.updateOrder(o);
+  notify(`💬 ${o.code} · ${o.name}, +${o.phone}\n\n${r.order.messages[r.order.messages.length - 1].text}`);
+  return shared.publicOrder(o);
+});
+
+/* Yetkazilgan buyurtmadagi mahsulotga baho */
+route('POST', '/api/reviews', async (req) => {
+  formLimit(req);
+  const b = await readJson(req);
+  const o = D.getOrderByCode(b.code);
+  const r = shared.checkReview({ order: o, phone: b.phone, productId: b.productId, rating: b.rating, text: b.text, name: b.name });
+  if (r.error) fail(400, r.error);
+  let saved;
+  D.tx(() => { saved = D.insertReview(r.review); o.reviewed = (o.reviewed || []).concat(r.review.productId); D.updateOrder(o); });
+  notify(`⭐ Yangi sharh (${saved.rating}/5) — ${saved.productTitle}\n${saved.name}: ${saved.text}\n\nAdmin paneldan tasdiqlang`);
+  return { id: saved.id, status: saved.status };
 });
 
 route('POST', '/api/requests', async (req) => {
@@ -278,25 +324,42 @@ route('POST', '/api/click/complete', async (req) => pay.clickComplete(await read
 /* Admin */
 route('POST', '/api/admin/login', async (req, prm, res) => {
   loginLimit(req);
-  const pw = String((await readJson(req)).password || '');
-  if (!ADMIN_PASSWORD || !crypto.timingSafeEqual(Buffer.from(sign(pw)), Buffer.from(sign(ADMIN_PASSWORD)))) fail(401, 'Parol notoʻgʻri');
-  res.setHeader('Set-Cookie', `${COOKIE}=${makeToken()}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 86400}${req.secure ? '; Secure' : ''}`);
+  const b = await readJson(req);
+  const login = clean(b.login || 'admin', 40).toLowerCase(), pw = String(b.password || '');
+  let token, user;
+  if (login === 'admin') {
+    if (!ADMIN_PASSWORD || !crypto.timingSafeEqual(Buffer.from(sign(pw)), Buffer.from(sign(ADMIN_PASSWORD)))) fail(401, 'Login yoki parol notoʻgʻri');
+    token = makeToken('owner', 0); user = OWNER;
+  } else {
+    const u = D.findStaffByLogin(login);
+    if (!u || u.active === false || !checkPassword(pw, u)) fail(401, 'Login yoki parol notoʻgʻri');
+    u.lastLogin = Date.now(); D.saveStaff(u);
+    token = makeToken('s' + u.id, u.ver || 0); user = { id: u.id, name: u.name, role: u.role };
+  }
+  req.user = user; req.auditNote = 'Kirdi';
+  res.setHeader('Set-Cookie', `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 86400}${req.secure ? '; Secure' : ''}`);
   return { ok: true };
-});
+}, { audit: 'Kirish' });
 route('POST', '/api/admin/logout', (req, prm, res) => { res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`); return { ok: true }; });
-route('GET', '/api/admin/me', () => ({ ok: true }), { admin: true });
-route('GET', '/api/admin/data', () => Object.assign(D.dump(), { payments: pay.availability(), telegram: !!(TG_TOKEN && TG_CHAT) }), { admin: true });
+route('GET', '/api/admin/me', (req) => ({ ok: true, ...req.user, perms: shared.PERMS[req.user.role] }), { admin: true });
+route('GET', '/api/admin/data', (req) => {
+  const d = Object.assign(D.dump(), { payments: pay.availability(), telegram: !!(TG_TOKEN && TG_CHAT), me: { ...req.user, perms: shared.PERMS[req.user.role] } });
+  if (!shared.can(req.user.role, 'promos')) delete d.promos;
+  if (req.user.role === 'owner') { d.staff = D.listStaff().map(publicStaff); d.audit = D.listAudit(300); }
+  return d;
+}, { admin: true });
 
 route('POST', '/api/admin/products', async (req) => {
   const p = sanitizeProduct(Object.assign({ active: true, badges: [], images: [], colors: [], stock: null }, await readJson(req)));
-  delete p.id; p.created = Date.now();
+  delete p.id; p.created = Date.now(); req.auditNote = p.title;
   return D.saveProduct(p);
-}, { admin: true });
+}, { admin: 'products', audit: 'Mahsulot qoʻshildi' });
 route('PUT', '/api/admin/products/:id', async (req, prm) => {
   const prev = D.getProduct(Number(prm.id)); if (!prev) fail(404, 'Mahsulot topilmadi');
-  return D.saveProduct(Object.assign(sanitizeProduct(await readJson(req), prev), { id: prev.id }));
-}, { admin: true });
-route('DELETE', '/api/admin/products/:id', (req, prm) => { D.deleteProduct(Number(prm.id)); return { ok: true }; }, { admin: true });
+  const next = sanitizeProduct(await readJson(req), prev); req.auditNote = next.title;
+  return D.saveProduct(Object.assign(next, { id: prev.id }));
+}, { admin: 'products', audit: 'Mahsulot tahrirlandi' });
+route('DELETE', '/api/admin/products/:id', (req, prm) => { const p = D.getProduct(Number(prm.id)); req.auditNote = p ? p.title : ''; D.deleteProduct(Number(prm.id)); return { ok: true }; }, { admin: 'products', audit: 'Mahsulot oʻchirildi' });
 
 route('PUT', '/api/admin/categories', async (req) => {
   const body = await readJson(req);
@@ -307,22 +370,22 @@ route('PUT', '/api/admin/categories', async (req) => {
   }).filter((c) => c.name);
   if (new Set(list.map((c) => c.id)).size !== list.length) fail(400, 'Turkum kodlari takrorlanmasin');
   return D.replaceCategories(list);
-}, { admin: true });
+}, { admin: 'categories', audit: 'Turkumlar saqlandi' });
 
-route('POST', '/api/admin/reels', async (req) => D.saveReel(sanitizeReel(Object.assign({ active: true }, await readJson(req))), true), { admin: true });
+route('POST', '/api/admin/reels', async (req) => D.saveReel(sanitizeReel(Object.assign({ active: true }, await readJson(req))), true), { admin: 'reels', audit: 'Video qoʻshildi' });
 route('PUT', '/api/admin/reels/:id', async (req, prm) => {
   const prev = D.listReels().find((x) => x.id === Number(prm.id)); if (!prev) fail(404, 'Video topilmadi');
   return D.saveReel(Object.assign(sanitizeReel(await readJson(req), prev), { id: prev.id }));
-}, { admin: true });
-route('POST', '/api/admin/reels/:id/move', async (req, prm) => { D.moveReel(Number(prm.id), Number((await readJson(req)).dir) < 0 ? -1 : 1); return { ok: true }; }, { admin: true });
-route('DELETE', '/api/admin/reels/:id', (req, prm) => { D.deleteReel(Number(prm.id)); return { ok: true }; }, { admin: true });
+}, { admin: 'reels', audit: 'Video tahrirlandi' });
+route('POST', '/api/admin/reels/:id/move', async (req, prm) => { D.moveReel(Number(prm.id), Number((await readJson(req)).dir) < 0 ? -1 : 1); return { ok: true }; }, { admin: 'reels' });
+route('DELETE', '/api/admin/reels/:id', (req, prm) => { D.deleteReel(Number(prm.id)); return { ok: true }; }, { admin: 'reels', audit: 'Video oʻchirildi' });
 
-route('POST', '/api/admin/promos', async (req) => { const p = sanitizePromo(Object.assign({ active: true, kind: 'percent', minOrder: 0, maxUses: 0, expires: '' }, await readJson(req))); delete p.id; return D.savePromo(p); }, { admin: true });
+route('POST', '/api/admin/promos', async (req) => { const p = sanitizePromo(Object.assign({ active: true, kind: 'percent', minOrder: 0, maxUses: 0, expires: '' }, await readJson(req))); delete p.id; return D.savePromo(p); }, { admin: 'promos', audit: 'Promokod qoʻshildi' });
 route('PUT', '/api/admin/promos/:id', async (req, prm) => {
   const prev = D.listPromos().find((x) => x.id === Number(prm.id)); if (!prev) fail(404, 'Promokod topilmadi');
   return D.savePromo(Object.assign(sanitizePromo(await readJson(req), prev), { id: prev.id }));
-}, { admin: true });
-route('DELETE', '/api/admin/promos/:id', (req, prm) => { D.deletePromo(Number(prm.id)); return { ok: true }; }, { admin: true });
+}, { admin: 'promos', audit: 'Promokod tahrirlandi' });
+route('DELETE', '/api/admin/promos/:id', (req, prm) => { D.deletePromo(Number(prm.id)); return { ok: true }; }, { admin: 'promos', audit: 'Promokod oʻchirildi' });
 
 route('PATCH', '/api/admin/orders/:id', async (req, prm) => {
   const o = D.getOrder(Number(prm.id)); if (!o) fail(404, 'Buyurtma topilmadi');
@@ -337,11 +400,13 @@ route('PATCH', '/api/admin/orders/:id', async (req, prm) => {
       o.status = b.status; o.history = (o.history || []).concat({ status: b.status, at: Date.now() });
     }
     if ('adminNote' in b) o.adminNote = clean(b.adminNote, 1000);
+    if (b.read) o.unread = false;
+    req.auditNote = `${o.code}${b.status ? ' → ' + (ORDER_STATUS[b.status] || [b.status])[0] : ''}`;
     return D.updateOrder(o);
   });
-}, { admin: true });
-route('DELETE', '/api/admin/orders/:id', (req, prm) => { D.deleteOrder(Number(prm.id)); return { ok: true }; }, { admin: true });
-route('GET', '/api/admin/orders.csv', () => ({ __csv: shared.ordersCsv(D.listOrders()) }), { admin: true });
+}, { admin: 'orders', audit: 'Buyurtma oʻzgardi' });
+route('DELETE', '/api/admin/orders/:id', (req, prm) => { D.deleteOrder(Number(prm.id)); return { ok: true }; }, { admin: 'orders', audit: 'Buyurtma oʻchirildi' });
+route('GET', '/api/admin/orders.csv', () => ({ __csv: shared.ordersCsv(D.listOrders()) }), { admin: 'orders' });
 
 route('PATCH', '/api/admin/requests/:id', async (req, prm) => {
   const r = D.getRequest(Number(prm.id)); if (!r) fail(404, 'Soʻrov topilmadi');
@@ -350,22 +415,65 @@ route('PATCH', '/api/admin/requests/:id', async (req, prm) => {
   if ('reply' in b) r.reply = clean(b.reply, 2000);
   if ('price' in b) r.price = Math.max(0, Math.round(Number(b.price) || 0));
   return D.updateRequest(r);
-}, { admin: true });
-route('DELETE', '/api/admin/requests/:id', (req, prm) => { D.deleteRequest(Number(prm.id)); return { ok: true }; }, { admin: true });
+}, { admin: 'requests', audit: 'Soʻrov oʻzgardi' });
+route('POST', '/api/admin/orders/:id/messages', async (req, prm) => {
+  const o = D.getOrder(Number(prm.id)); if (!o) fail(404, 'Buyurtma topilmadi');
+  const r = shared.addMessage(o, 'shop', (await readJson(req)).text, req.user.name);
+  if (r.error) fail(400, r.error);
+  req.auditNote = o.code;
+  return D.updateOrder(o);
+}, { admin: 'orders', audit: 'Mijozga yozildi' });
+
+route('PATCH', '/api/admin/reviews/:id', async (req, prm) => {
+  const r = D.getReview(Number(prm.id)); if (!r) fail(404, 'Sharh topilmadi');
+  const b = await readJson(req);
+  if ('status' in b) { if (!(b.status in shared.REVIEW_STATUS)) fail(400, 'Holat notoʻgʻri'); r.status = b.status; }
+  if ('reply' in b) r.reply = clean(b.reply, 1000);
+  req.auditNote = `${r.productTitle} (${r.rating}/5)${b.status ? ' → ' + shared.REVIEW_STATUS[b.status][0] : ''}`;
+  return D.updateReview(r);
+}, { admin: 'reviews', audit: 'Sharh oʻzgardi' });
+route('DELETE', '/api/admin/reviews/:id', (req, prm) => { D.deleteReview(Number(prm.id)); return { ok: true }; }, { admin: 'reviews', audit: 'Sharh oʻchirildi' });
+
+/* Xodimlar: faqat egasi boshqaradi */
+function sanitizeStaff(b, prev) {
+  const u = Object.assign({ active: true, ver: 0 }, prev || {});
+  if ('login' in b) u.login = clean(b.login, 30).toLowerCase();
+  if ('name' in b) u.name = clean(b.name, 60);
+  if ('role' in b) { if (!['manager', 'operator'].includes(b.role)) fail(400, 'Rol notoʻgʻri'); u.role = b.role; }
+  if ('active' in b) { u.active = !!b.active; u.ver = (u.ver || 0) + 1; }
+  if (b.password) {
+    if (String(b.password).length < 8) fail(400, 'Parol kamida 8 belgi boʻlsin');
+    Object.assign(u, hashPassword(b.password)); u.ver = (u.ver || 0) + 1;
+  }
+  if (!/^[a-z0-9._-]{3,30}$/.test(u.login || '') || u.login === 'admin') fail(400, 'Login 3–30 ta lotin harf yoki raqam boʻlsin (“admin” emas)');
+  if (!u.name || u.name.length < 2) fail(400, 'Ismni yozing');
+  if (!u.hash) fail(400, 'Parol kiriting');
+  const other = D.findStaffByLogin(u.login); if (other && other.id !== u.id) fail(400, 'Bunday login bor');
+  return u;
+}
+route('POST', '/api/admin/staff', async (req) => { const u = sanitizeStaff(Object.assign({ role: 'operator' }, await readJson(req))); delete u.id; u.created = Date.now(); req.auditNote = u.login; return publicStaff(D.saveStaff(u)); }, { admin: 'staff', audit: 'Xodim qoʻshildi' });
+route('PUT', '/api/admin/staff/:id', async (req, prm) => {
+  const prev = D.getStaff(Number(prm.id)); if (!prev) fail(404, 'Xodim topilmadi');
+  const u = Object.assign(sanitizeStaff(await readJson(req), prev), { id: prev.id }); req.auditNote = u.login;
+  return publicStaff(D.saveStaff(u));
+}, { admin: 'staff', audit: 'Xodim tahrirlandi' });
+route('DELETE', '/api/admin/staff/:id', (req, prm) => { const u = D.getStaff(Number(prm.id)); D.deleteStaff(Number(prm.id)); req.auditNote = u ? u.login : ''; return { ok: true }; }, { admin: 'staff', audit: 'Xodim oʻchirildi' });
+
+route('DELETE', '/api/admin/requests/:id', (req, prm) => { D.deleteRequest(Number(prm.id)); return { ok: true }; }, { admin: 'requests', audit: 'Soʻrov oʻchirildi' });
 
 route('PUT', '/api/admin/settings', async (req) => {
   const b = await readJson(req); const s = D.getSettings();
   shared.SETTINGS_TEXT.forEach((k) => { if (k in b) s[k] = clean(b[k], k.startsWith('heroText') ? 400 : 200); });
   ['deliveryFee', 'freeFrom'].forEach((k) => { if (k in b) s[k] = Math.max(0, Math.round(Number(b[k]) || 0)); });
   return D.setSettings(s);
-}, { admin: true });
+}, { admin: 'settings', audit: 'Sozlamalar saqlandi' });
 route('POST', '/api/admin/upload', async (req) => {
   const { files } = await readMultipart(req, 9 * 1024 * 1024);
   const f = files.find((x) => x.field === 'file');
   if (!f) fail(400, 'Rasm tanlang');
   if (!IMG_TYPES[f.type]) fail(400, 'Faqat JPG, PNG, WEBP yoki GIF rasm');
   return { url: await storeFile(f) };
-}, { admin: true });
+}, { admin: 'products' });
 
 /* ---------- Server ---------- */
 const server = http.createServer(async (req, res) => {
@@ -391,8 +499,15 @@ const server = http.createServer(async (req, res) => {
       }
       const prm = {}; r.keys.forEach((k, i) => { prm[k] = m[i + 1]; });
       try {
-        if (r.admin && !isAdmin(req)) fail(401, 'Avval tizimga kiring');
+        if (r.admin) {
+          req.user = currentUser(req);
+          if (!req.user) fail(401, 'Avval tizimga kiring');
+          if (r.admin !== true && !shared.can(req.user.role, r.admin)) fail(403, 'Bu boʻlim uchun ruxsatingiz yoʻq');
+        }
         const out = await r.handler(req, prm, res);
+        if (r.audit && req.user) {
+          try { D.addAudit({ at: Date.now(), user: req.user.name, role: req.user.role, action: r.audit, target: prm.id || '', note: clean(req.auditNote || '', 200), ip: req.ip }); } catch (e) { console.error('Jurnal:', e.message); }
+        }
         if (out && out.__csv != null) {
           res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="buyurtmalar.csv"', 'Cache-Control': 'no-store' });
           return res.end('﻿' + out.__csv);
@@ -410,6 +525,8 @@ const server = http.createServer(async (req, res) => {
   if (p === '/' || p === '/index.html') return serveFile(req, res, path.join(ROOT, 'index.html'));
   if (p === '/admin' || p === '/admin.html') return serveFile(req, res, path.join(ROOT, 'admin.html'));
   if (p === '/data/seed.json') return serveFile(req, res, path.join(ROOT, 'data', 'seed.json'));
+  if (p === '/sw.js') { res.setHeader('Service-Worker-Allowed', '/'); return serveFile(req, res, path.join(ROOT, 'sw.js')); }
+  if (p === '/manifest.webmanifest') return serveFile(req, res, path.join(ROOT, 'manifest.webmanifest'));
   if (p.startsWith('/uploads/')) { const f = safeJoin(UPLOADS, p.slice(9)); return f ? serveFile(req, res, f, 2592000) : send(res, 404, { error: 'Topilmadi' }); }
   if (p.startsWith('/assets/')) { const f = safeJoin(path.join(ROOT, 'assets'), p.slice(8)); return f ? serveFile(req, res, f, 86400) : send(res, 404, { error: 'Topilmadi' }); }
   return send(res, 404, { error: 'Topilmadi' });

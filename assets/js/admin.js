@@ -1,7 +1,7 @@
 'use strict';
 (function () {
   const { h, toast, modal, confirmBox, date } = UI;
-  const { money, fmtPhone, ORDER_STATUS, REQUEST_STATUS, BADGES, reelCode } = Store;
+  const { money, fmtPhone, ORDER_STATUS, REQUEST_STATUS, BADGES, reelCode, REVIEW_STATUS, ROLES } = Store;
   const A = Store.admin;
   const app = document.getElementById('app');
   let data = null;
@@ -15,10 +15,16 @@
     reels: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="m10 8.5 5 3.5-5 3.5z"/>',
     promos: '<path d="M20 12 12 20 4 12V4h8z"/><circle cx="8.5" cy="8.5" r="1.5"/>',
     customers: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+    reviews: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+    staff: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="m16.5 3.5 1.5 1.5 3-3"/>',
+    audit: '<path d="M8 4h11v16H5V7z"/><path d="M8 4v3H5M9 11h7M9 15h7"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 13.6H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   };
   const icon = (k, s) => `<svg width="${s || 20}" height="${s || 20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
-  const TABS = [['dash', 'Bosh sahifa'], ['orders', 'Buyurtmalar'], ['requests', 'Soʻrovlar'], ['products', 'Mahsulotlar'], ['categories', 'Turkumlar'], ['reels', 'Instagram videolari'], ['promos', 'Promokodlar'], ['customers', 'Mijozlar'], ['settings', 'Sozlamalar']];
+  const ALL_TABS = [['dash', 'Bosh sahifa'], ['orders', 'Buyurtmalar'], ['requests', 'Soʻrovlar'], ['reviews', 'Sharhlar'], ['products', 'Mahsulotlar'], ['categories', 'Turkumlar'], ['reels', 'Instagram videolari'], ['promos', 'Promokodlar'], ['customers', 'Mijozlar'], ['staff', 'Xodimlar'], ['audit', 'Amallar jurnali'], ['settings', 'Sozlamalar']];
+  // Har bir xodim faqat o'z ruxsati bor bo'limlarni ko'radi
+  let TABS = ALL_TABS;
+  const allowed = (k) => !data || !data.me || Store.can(data.me.role, k);
   const st = (map, k) => { const [t, c] = map[k] || [k, '']; return h('span', { class: 'st ' + c, text: t }); };
   const catName = (id) => ((data.categories.find((c) => c.id === id) || {}).name || id);
   const run = async (fn, okMsg) => { try { const r = await fn(); if (okMsg) toast(okMsg); return r; } catch (e) { if (e.status === 401) { showLogin(); } toast(e.message, true); throw e; } };
@@ -27,17 +33,20 @@
   /* ---------- Kirish ---------- */
   function showLogin() {
     side = null;
+    const lg = h('input', { class: 'input', id: 'lg', autocomplete: 'username', value: 'admin', autocapitalize: 'none', spellcheck: 'false' });
     const pw = h('input', { class: 'input', type: 'password', id: 'pw', autocomplete: 'current-password', autofocus: true });
     const err = h('p', { class: 'form-error', role: 'alert' });
     const btn = h('button', { class: 'btn btn-wide', type: 'submit', text: 'Kirish' });
     const form = h('form', { class: 'login-card', novalidate: true },
       h('a', { class: 'logo', href: './', html: '<svg width="34" height="34" viewBox="0 0 40 40"><path d="M20 3 36 12v16L20 37 4 28V12z" fill="#F5892A"/><path d="M20 3 36 12 20 21 4 12z" fill="#FFB067"/><path d="M20 21v16L4 28V12z" fill="#C96A14"/></svg><span><b>3D</b> UrbanPrint</span>' }),
       h('h1', { text: 'Admin panelga kirish' }),
-      Store.mode === 'demo' ? h('div', { class: 'demo-note', html: `Demo rejim. Parol: <b>${Store.DEMO_PASSWORD}</b>. Oʻzgarishlar faqat shu brauzerda saqlanadi va doʻkon sahifasida darhol koʻrinadi.` }) : null,
-      h('div', { class: 'field' }, h('label', { for: 'pw', text: 'Parol' }), pw), err, btn);
+      Store.mode === 'demo' ? h('div', { class: 'demo-note', html: `Demo rejim. Login: <b>admin</b>, parol: <b>${Store.DEMO_PASSWORD}</b>. Oʻzgarishlar faqat shu brauzerda saqlanadi va doʻkon sahifasida darhol koʻrinadi.` }) : null,
+      h('div', { class: 'field' }, h('label', { for: 'lg', text: 'Login' }), lg),
+      h('div', { class: 'field' }, h('label', { for: 'pw', text: 'Parol' }), pw), err, btn,
+      h('small', { class: 'help', text: 'Egasi “admin” login bilan kiradi. Xodimlarga login va parolni egasi “Xodimlar” boʻlimida beradi.' }));
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); err.textContent = ''; btn.disabled = true;
-      try { await A.login(pw.value); await boot(); } catch (ex) { err.textContent = ex.message; btn.disabled = false; pw.select(); }
+      try { await A.login(pw.value, lg.value); await boot(); } catch (ex) { err.textContent = ex.message; btn.disabled = false; pw.select(); }
     });
     app.className = ''; app.replaceChildren(h('div', { class: 'login' }, form)); pw.focus();
   }
@@ -56,21 +65,32 @@
   function renderSide(cur) {
     const newOrders = data.orders.filter((o) => o.status === 'new').length;
     const newReq = data.requests.filter((r) => r.status === 'new').length;
+    const unread = data.orders.filter((o) => o.unread).length;
+    const pendRev = (data.reviews || []).filter((r) => r.status === 'pending').length;
     side.replaceChildren(
       h('a', { class: 'logo', href: './', target: '_blank', html: '<svg width="30" height="30" viewBox="0 0 40 40"><path d="M20 3 36 12v16L20 37 4 28V12z" fill="#F5892A"/><path d="M20 3 36 12 20 21 4 12z" fill="#FFB067"/><path d="M20 21v16L4 28V12z" fill="#C96A14"/></svg><span><b>3D</b> UrbanPrint</span>' }),
       ...TABS.map(([k, name]) => h('a', { class: 'tab' + (k === cur ? ' on' : ''), href: '#' + k, onclick: () => side.classList.remove('open') },
         h('span', { html: icon(k) }), name,
-        k === 'orders' && newOrders ? h('span', { class: 'cnt', text: newOrders }) : null,
+        k === 'orders' && (newOrders || unread) ? h('span', { class: 'cnt', title: unread ? `${unread} ta javobsiz xabar` : '', text: newOrders + (unread ? ' · 💬' + unread : '') }) : null,
+        k === 'reviews' && pendRev ? h('span', { class: 'cnt', text: pendRev }) : null,
         k === 'requests' && newReq ? h('span', { class: 'cnt', text: newReq }) : null)),
       h('div', { class: 'side-foot' },
+        data.me ? h('div', { class: 'who' }, h('span', { class: 'who-ava', text: (data.me.name || '?').slice(0, 1) }), h('div', {}, h('b', { text: data.me.name }), h('small', { text: data.me.role === 'owner' ? '@admin · barcha huquqlar' : `${ROLES[data.me.role] || data.me.role}${data.me.login ? ' · @' + data.me.login : ''}` }))) : null,
         h('span', { class: 'mode-pill' + (Store.mode === 'demo' ? ' demo' : '') }, h('i'), Store.mode === 'demo' ? 'Demo rejim (brauzerda)' : 'Server ulangan'),
-        h('a', { class: 'btn btn-ghost btn-sm', href: './', target: '_blank', text: 'Saytni ochish' }),
+        h('div', { style: { display: 'flex', gap: '8px' } },
+          h('a', { class: 'btn btn-ghost btn-sm', style: { flex: 1 }, href: './', target: '_blank', text: 'Saytni ochish' }),
+          h('button', { class: 'btn btn-ghost btn-sm', type: 'button', title: 'Yorugʻ / qorongʻi mavzu', 'aria-label': 'Mavzu', text: '◐', onclick: () => {
+            const light = document.documentElement.dataset.theme !== 'light';
+            if (light) document.documentElement.dataset.theme = 'light'; else delete document.documentElement.dataset.theme;
+            try { localStorage.setItem('up_theme', light ? 'light' : 'dark'); } catch { /* yopiq */ }
+          } })),
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Chiqish', onclick: async () => { await A.logout(); showLogin(); } })));
   }
   async function route() {
     const k = (location.hash || '#dash').slice(1);
-    const tab = TABS.find((t) => t[0] === k) ? k : 'dash';
     try { await reload(); } catch (e) { if (e.status === 401) return showLogin(); toast(e.message, true); return; }
+    TABS = ALL_TABS.filter(([key]) => allowed(key));
+    const tab = TABS.find((t) => t[0] === k) ? k : 'dash';
     renderSide(tab);
     title.textContent = TABS.find((t) => t[0] === tab)[1];
     topActions.replaceChildren(); content.replaceChildren();
@@ -99,6 +119,14 @@
         h('div', { class: 'kpi' }, h('span', { text: 'Yetkazilgan tushum' }), h('b', { text: money(revenue) }), h('small', { text: `jarayonda: ${money(pending)}` })),
         h('div', { class: 'kpi' }, h('span', { text: 'Oʻrtacha chek' }), h('b', { text: money(avg) }), h('small', { text: `${new Set(live.map((x) => x.phone)).size} ta mijoz` })),
         h('a', { class: 'kpi', href: '#requests' }, h('span', { text: 'Yangi soʻrovlar' }), h('b', { text: data.requests.filter((x) => x.status === 'new').length }), h('small', { text: `jami ${data.requests.length} ta` }))),
+      (function () {
+        const unread = o.filter((x) => x.unread), pend = (data.reviews || []).filter((r) => r.status === 'pending');
+        const rv = (data.reviews || []).filter((r) => r.status === 'approved');
+        const avgR = rv.length ? (rv.reduce((a, r) => a + r.rating, 0) / rv.length).toFixed(1) : '—';
+        return h('div', { class: 'kpis' },
+          h('a', { class: 'kpi' + (unread.length ? ' hot' : ''), href: '#orders' }, h('span', { text: 'Javob kutayotgan xabarlar' }), h('b', { text: unread.length }), h('small', { text: unread.length ? unread.slice(0, 3).map((x) => x.code).join(', ') : 'Hammasiga javob berilgan' })),
+          h('a', { class: 'kpi' + (pend.length ? ' hot' : ''), href: '#reviews' }, h('span', { text: 'Tekshiruvdagi sharhlar' }), h('b', { text: pend.length }), h('small', { text: `Saytda ${rv.length} ta · oʻrtacha ${avgR} ★` })));
+      })(),
       h('div', { class: 'grid-dash' },
         h('div', { class: 'box' }, h('div', { class: 'box-head' }, h('h2', { text: 'Soʻnggi 14 kun: tushum' }), h('small', { class: 'muted', text: `${counts.reduce((a, b) => a + b, 0)} ta buyurtma` })),
           h('div', { class: 'bars' }, sums.map((n, i) => h('div', { class: n ? '' : 'zero', 'data-n': counts[i] || '', title: money(n), style: { height: (n / max) * 100 + '%' } }))),
@@ -146,6 +174,8 @@
     content.append(h('div', { class: 'filters' }, h('label', { class: 'search', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' }, s)), filters, box);
     paint();
   }
+  // Chekdagi QR: do'kon sahifasida buyurtma kuzatish oynasini ochadi
+  const trackUrl = (o) => new URL('./?order=' + encodeURIComponent(o.code), location.href).href;
   function printReceipt(o) {
     const w = window.open('', '_blank', 'width=420,height=640');
     if (!w) return toast('Brauzer yangi oynani blokladi', true);
@@ -158,7 +188,10 @@
       ${o.discount ? `<tr><td>Chegirma ${e(o.promo)}</td><td>−${e(money(o.discount))}</td></tr>` : ''}${o.fee ? `<tr><td>Yetkazish</td><td>${e(money(o.fee))}</td></tr>` : ''}
       <tr><td class="t">Jami</td><td class="t">${e(money(o.total))}</td></tr></table>
       <div class="m">Toʻlov: ${e(PAY[o.payment] || '')} · ${e(ORDER_STATUS[o.status] ? ORDER_STATUS[o.status][0] : o.status)}</div>${o.note ? `<p>Izoh: ${e(o.note)}</p>` : ''}
-      <p class="m">Rahmat! Instagram: @${e(String(data.settings.instagram || '').replace(/^@/, ''))}</p><script>print()<\/script>`);
+      <p class="m">Rahmat! Instagram: @${e(String(data.settings.instagram || '').replace(/^@/, ''))}</p>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:10px"><div id="qr"></div><div class="m" style="font-size:12px">Buyurtmani kuzatish va doʻkonga yozish uchun skanerlang.<br>Raqam: <b>${e(o.code)}</b></div></div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>
+      <script>try{var q=qrcode(0,'M');q.addData(${JSON.stringify(trackUrl(o))});q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:3,margin:0})}catch(err){}setTimeout(print,300)<\/script>`);
     w.document.close();
   }
   function orderRow(o) {
@@ -177,12 +210,16 @@
         h('p', { text: 'Toʻlov: ' + (PAY[o.payment] || '—') + (o.paidAt ? ' · toʻlangan ' + date(o.paidAt) : '') }),
         o.note ? h('small', { text: 'Izoh' }) : null, o.note ? h('p', { text: o.note }) : null),
       h('div', {}, h('small', { text: 'Tarix' }), h('ol', { class: 'mini-timeline' }, (o.history || []).map((x) => h('li', { text: `${(ORDER_STATUS[x.status] || [x.status])[0]} — ${date(x.at)}` })))),
+      orderChat(o),
       h('div', { class: 'field' }, h('label', { text: 'Ichki eslatma (mijoz koʻrmaydi)' }), (() => {
         const t = h('textarea', { class: 'textarea', style: { minHeight: '70px' } }); t.value = o.adminNote || '';
         t.addEventListener('change', () => run(() => A.setOrder(o.id, { adminNote: t.value }), 'Saqlandi')); return t;
       })()));
-    return h('div', { class: 'row order expand', onclick: () => { detail.hidden = !detail.hidden; } },
-      h('span', { class: 'id', text: o.code || '#' + o.id }),
+    return h('div', { class: 'row order expand' + (o.unread ? ' unread' : ''), onclick: (ev) => {
+      detail.hidden = !detail.hidden;
+      if (!detail.hidden && o.unread) { o.unread = false; ev.currentTarget.classList.remove('unread'); A.setOrder(o.id, { read: true }).catch(() => {}); }
+    } },
+      h('span', { class: 'id' }, o.code || '#' + o.id, o.unread ? h('i', { class: 'msg-dot', title: 'Javobsiz xabar' }) : null),
       h('div', {}, h('strong', { text: o.name }), h('a', { class: 'tel', href: 'tel:+' + o.phone, text: fmtPhone(o.phone), onclick: (e) => e.stopPropagation() }), h('small', { text: ' · ' + date(o.created) })),
       h('div', { class: 'items-mini' }, o.items.slice(0, 2).map((i) => h('div', { text: `${i.title} × ${i.qty}` })), o.items.length > 2 ? h('div', { text: `+${o.items.length - 2} ta` }) : null),
       h('div', {}, h('b', { class: 'price', text: money(o.total) }), h('small', { text: (PAY[o.payment] || '') + (o.delivery === 'pickup' ? ' · olib ketish' : '') })), sel,
@@ -190,6 +227,109 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Chek chop etish', title: 'Chek', text: '🧾', onclick: (e) => { e.stopPropagation(); printReceipt(o); } }),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Oʻchirish', text: '🗑', onclick: async (e) => { e.stopPropagation(); if (await confirmBox(`${o.code} buyurtmani oʻchirasizmi?`)) run(() => A.deleteOrder(o.id), 'Oʻchirildi').then(refresh); } })),
       detail);
+  }
+
+  function orderChat(o) {
+    const list = h('div', { class: 'chat-list' }, (o.messages || []).length
+      ? o.messages.map((m) => h('div', { class: 'msg ' + (m.from === 'shop' ? 'me' : 'them') }, h('p', { text: m.text }), h('small', { text: `${m.from === 'shop' ? (m.by || 'Doʻkon') : o.name} · ${date(m.at)}` })))
+      : [h('p', { class: 'help', text: 'Mijoz “Buyurtmam qayerda?” oynasidan yozsa, xabar shu yerda chiqadi. Siz ham birinchi boʻlib yozishingiz mumkin.' })]);
+    const inp = h('input', { class: 'input', placeholder: 'Mijozga javob...', maxlength: 1000 });
+    const send = h('button', { class: 'btn btn-sm', type: 'button', text: 'Yuborish' });
+    const box = h('div', { class: 'chat field' }, h('label', { text: 'Mijoz bilan yozishma' }), list, h('div', { class: 'chat-in' }, inp, send));
+    const go = async () => {
+      if (!inp.value.trim()) return; send.disabled = true;
+      try { const x = await A.reply(o.id, inp.value); Object.assign(o, x); box.replaceWith(orderChat(o)); toast('Yuborildi — mijoz kuzatish oynasida koʻradi'); }
+      catch (e) { toast(e.message, true); send.disabled = false; }
+    };
+    send.addEventListener('click', go);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+    return box;
+  }
+
+  /* ---------- Sharhlar ---------- */
+  let revFilter = 'pending';
+  function viewReviews() {
+    const all = data.reviews || [];
+    if (!all.length) { content.append(h('div', { class: 'empty-sm', text: 'Sharhlar shu yerda chiqadi. Mijoz buyurtmasi “Yetkazildi” boʻlgach, kuzatish oynasidan baho qoldira oladi. Tasdiqlangan sharhlar saytda koʻrinadi.' })); return; }
+    if (!all.some((r) => r.status === revFilter)) revFilter = 'all';
+    content.append(h('div', { class: 'filters' }, [['all', 'Hammasi']].concat(Object.entries(REVIEW_STATUS).map(([k, v]) => [k, v[0]])).map(([k, n]) =>
+      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(k === revFilter), onclick: () => { revFilter = k; refresh(); } }, n, h('small', { text: k === 'all' ? all.length : all.filter((r) => r.status === k).length })))));
+    const list = all.filter((r) => revFilter === 'all' || r.status === revFilter);
+    content.append(h('div', { class: 'list' }, list.map((r) => {
+      const reply = h('textarea', { class: 'textarea', style: { minHeight: '60px' }, placeholder: 'Doʻkon javobi (saytda sharh ostida chiqadi)', maxlength: 1000 }); reply.value = r.reply || '';
+      const set = (patch, msg) => run(() => A.setReview(r.id, Object.assign({ reply: reply.value }, patch)), msg).then(refresh);
+      return h('div', { class: 'box rev-admin' },
+        h('div', { class: 'box-head' },
+          h('div', {}, h('h2', { text: r.productTitle }), h('small', { class: 'muted', text: `${r.name} · ${r.orderCode || ''} · ${date(r.created)}` })),
+          h('div', { style: { display: 'flex', gap: '10px', alignItems: 'center' } }, h('span', { class: 'stars-a', text: '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating) }), st(REVIEW_STATUS, r.status))),
+        h('p', { style: { whiteSpace: 'pre-wrap' }, text: r.text }), reply,
+        h('div', { class: 'row-end' },
+          h('button', { class: 'btn btn-danger btn-sm', type: 'button', text: 'Oʻchirish', onclick: async () => { if (await confirmBox('Sharh butunlay oʻchirilsinmi?')) run(() => A.deleteReview(r.id), 'Oʻchirildi').then(refresh); } }),
+          r.status !== 'hidden' ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Yashirish', onclick: () => set({ status: 'hidden' }, 'Yashirildi') }) : null,
+          r.status === 'approved' ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Javobni saqlash', onclick: () => set({}, 'Saqlandi') })
+            : h('button', { class: 'btn btn-sm', type: 'button', text: 'Tasdiqlash va saytga chiqarish', onclick: () => set({ status: 'approved' }, 'Saytga chiqdi') })));
+    })));
+  }
+
+  /* ---------- Xodimlar ---------- */
+  function viewStaff() {
+    topActions.append(h('button', { class: 'btn btn-sm', type: 'button', text: '+ Xodim qoʻshish', onclick: () => editStaff(null) }));
+    content.append(h('div', { class: 'box' }, h('div', { class: 'box-head' }, h('h2', { text: 'Rollar' })),
+      h('div', { class: 'roles' },
+        h('div', {}, h('b', { text: 'Egasi' }), h('small', { text: 'Hamma narsa: sozlamalar, xodimlar, jurnal. “admin” login bilan kiradi.' })),
+        h('div', {}, h('b', { text: 'Menejer' }), h('small', { text: 'Buyurtma, soʻrov, sharh, mahsulot, turkum, video, promokod. Sozlamalar va xodimlarga kira olmaydi.' })),
+        h('div', {}, h('b', { text: 'Operator' }), h('small', { text: 'Faqat buyurtmalar, soʻrovlar, sharhlar va mijozlar. Mahsulot va narxlarni oʻzgartira olmaydi.' })))));
+    const list = data.staff || [];
+    content.append(list.length ? h('div', { class: 'list' }, list.map((u) => h('div', { class: 'row', style: { gridTemplateColumns: '44px minmax(0,1.3fr) minmax(0,1fr) auto auto' } },
+      h('span', { class: 'who-ava', text: u.name.slice(0, 1) }),
+      h('div', {}, h('strong', { text: u.name }), h('small', { class: 'muted', text: '@' + u.login })),
+      h('small', { class: 'muted', text: u.lastLogin ? 'Oxirgi kirish: ' + date(u.lastLogin) : 'Hali kirmagan' }),
+      h('span', { class: 'st ' + (u.active ? 'ok' : 'bad'), text: (ROLES[u.role] || u.role) + (u.active ? '' : ' · oʻchirilgan') }),
+      h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Tahrirlash', onclick: () => editStaff(u) }))))
+      : h('div', { class: 'empty-sm', text: 'Hozircha xodim yoʻq. Buyurtmalarni boshqa odam ham qabul qilsa, unga alohida login bering — kim nima qilgani jurnalda koʻrinadi.' }));
+  }
+  function editStaff(u0) {
+    const u = Object.assign({ login: '', name: '', role: 'operator', active: true }, u0 || {});
+    const name = h('input', { class: 'input', id: 'st-n', value: u.name, maxlength: 60, autofocus: true });
+    const login = h('input', { class: 'input', id: 'st-l', value: u.login, maxlength: 30, autocapitalize: 'none', placeholder: 'masalan: dilnoza' });
+    const role = h('select', { class: 'select', id: 'st-r' }, [['operator', 'Operator'], ['manager', 'Menejer']].map(([v, n]) => h('option', { value: v, text: n, selected: v === u.role })));
+    const pw = h('input', { class: 'input', id: 'st-p', type: 'text', autocomplete: 'new-password', placeholder: u0 ? 'Oʻzgartirmaslik uchun boʻsh qoldiring' : 'Kamida 8 belgi' });
+    const gen = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', text: 'Parol yaratish', onclick: () => { const a = new Uint32Array(3); crypto.getRandomValues(a); pw.value = [...a].map((x) => x.toString(36)).join('').slice(0, 12); } });
+    const active = h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: u.active }), h('i'), 'Kira oladi');
+    const err = h('p', { class: 'form-error', role: 'alert' });
+    const form = h('form', { class: 'stack', novalidate: true },
+      h('div', { class: 'form-grid' },
+        h('div', { class: 'field' }, h('label', { for: 'st-n', text: 'Ismi' }), name),
+        h('div', { class: 'field' }, h('label', { for: 'st-l', text: 'Login' }), login),
+        h('div', { class: 'field' }, h('label', { for: 'st-r', text: 'Rol' }), role),
+        h('div', { class: 'field' }, h('label', { for: 'st-p', text: 'Parol' }), pw, gen),
+        u0 ? h('div', { class: 'field full' }, active, h('span', { class: 'help', text: 'Oʻchirilsa yoki parol oʻzgarsa, xodimning ochiq sessiyasi darhol yopiladi.' })) : null),
+      err,
+      h('div', { class: 'modal-foot' },
+        h('div', {}, u0 ? h('button', { class: 'btn btn-danger btn-sm', type: 'button', text: 'Oʻchirish', onclick: async () => { if (await confirmBox(`${u0.name} oʻchirilsinmi?`)) { await run(() => A.deleteStaff(u0.id), 'Oʻchirildi'); m.close(); refresh(); } } }) : null),
+        h('div', {}, h('button', { class: 'btn btn-ghost', type: 'button', text: 'Bekor qilish', onclick: () => m.close() }), h('button', { class: 'btn', type: 'submit', text: 'Saqlash' }))));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); err.textContent = '';
+      const out = { name: name.value.trim(), login: login.value.trim(), role: role.value };
+      if (pw.value) out.password = pw.value;
+      if (u0) { out.id = u0.id; if (active.querySelector('input').checked !== u0.active) out.active = active.querySelector('input').checked; }
+      try { await A.saveStaff(out); toast(pw.value ? `Saqlandi. Login: ${out.login}, parol: ${pw.value} — xodimga yetkazing` : 'Saqlandi'); m.close(); refresh(); }
+      catch (ex) { err.textContent = ex.message; }
+    });
+    const m = modal(u0 ? 'Xodimni tahrirlash' : 'Yangi xodim', form);
+  }
+
+  /* ---------- Amallar jurnali ---------- */
+  function viewAudit() {
+    const list = data.audit || [];
+    if (!list.length) { content.append(h('div', { class: 'empty-sm', text: 'Kim qachon nima qilgani shu yerda yoziladi.' })); return; }
+    content.append(h('p', { class: 'help', text: 'Admin paneldagi har bir oʻzgarish: kim, qachon, nima. Oxirgi 300 ta yozuv.' }),
+      h('div', { class: 'audit' }, list.map((a) => h('div', { class: 'audit-row' },
+        h('small', { class: 'muted', text: date(a.at) }),
+        h('span', {}, h('b', { text: a.user }), h('small', { class: 'muted', text: ' · ' + (ROLES[a.role] || a.role) })),
+        h('span', { text: a.action }),
+        h('small', { class: 'muted', text: a.note || (a.target ? '#' + a.target : '') }))))); 
   }
 
   /* ---------- So'rovlar ---------- */
@@ -546,7 +686,7 @@
         h('a', { class: 'btn btn-ghost btn-sm', href: 'tel:+' + c.phone, text: 'Qoʻngʻiroq' })))));
   }
 
-  const VIEWS = { dash: viewDash, orders: viewOrders, requests: viewRequests, products: viewProducts, categories: viewCategories, reels: viewReels, promos: viewPromos, customers: viewCustomers, settings: viewSettings };
+  const VIEWS = { dash: viewDash, orders: viewOrders, requests: viewRequests, reviews: viewReviews, products: viewProducts, categories: viewCategories, reels: viewReels, promos: viewPromos, customers: viewCustomers, staff: viewStaff, audit: viewAudit, settings: viewSettings };
 
   async function boot() {
     await Store.detect();
